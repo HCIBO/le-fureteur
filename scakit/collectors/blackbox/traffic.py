@@ -194,7 +194,7 @@ def sanitize_upload(path: Path) -> bool:
                                                      if k.lower() not in SECRET_RESP_HEADERS],
                                          "content": {"mimeType": r["headers"].get("Content-Type", ""),
                                                      "encoding": "base64", "text": base64.b64encode(r["body"]).decode()}}})
-        doc = {"log": {"version": "1.2", "creator": {"name": "Le Fureteur (Burp içe aktarma)"}, "entries": entries}}
+        doc = {"log": {"version": "1.2", "creator": {"name": "Le Fureteur (Burp import)"}, "entries": entries}}
     else:
         doc = _load_har(path)
         for e in doc["log"]["entries"]:

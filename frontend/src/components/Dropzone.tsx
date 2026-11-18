@@ -48,7 +48,7 @@ export function Dropzone({ files, onChange, accept, maxFiles, maxMb, disabled }:
             <div style={{ flex: 1, minWidth: 0 }}>
               <Group justify="space-between" wrap="nowrap"><Text size="sm" truncate>{p.file.name}</Text><Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>{fmtSize(p.file.size)}</Text></Group>
               {p.status === "uploading" && <Progress value={p.progress} size="sm" mt={4} animated />}
-              {p.status === "error" && <Text size="xs" c="red">{p.error}</Text>}
+              {p.status === "error" && <Text size="xs" c="red">{t(p.error ?? "")}</Text>}
             </div>
             {p.status === "waiting" && !disabled && <ActionIcon variant="subtle" color="gray" onClick={() => onChange(files.filter((_, j) => j !== i))} aria-label={t("Kaldır")}><IconX size={14} /></ActionIcon>}
             {p.status === "done" && <Badge color="green" variant="light" size="sm">{t("Yüklendi")}</Badge>}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ..messages import translate
 from .i18n import tr
 
 
@@ -38,7 +39,7 @@ def supply_blocks(d: dict, lang: str) -> list:
             continue
         any_item = True
         out.append(("p", f"{tr('obs', lang, kind)} ({len(items)})"))
-        out.append(("list", [o.location + (f" — {o.detail}" if o.detail else "") for o in items[:60]]))
+        out.append(("list", [o.location + (f" — {translate(o.detail, lang)}" if o.detail else "") for o in items[:60]]))
     if not any_item:
         out.append(("p", tr("sc_none", lang)))
     return out

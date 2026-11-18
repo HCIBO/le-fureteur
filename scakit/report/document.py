@@ -6,6 +6,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from ..messages import translate
 from ..models import base_ecosystem
 from .i18n import tr
 from .sections import license_blocks, method_text, supply_blocks, suppressed_blocks
@@ -327,7 +328,7 @@ def to_pdf(d: dict, lang: str, out: Path) -> Path:
         label = tr("obs", lang, kind) if kind in T["obs"] else kind
         block = [P(f"{esc(label)} ({len(items)})", "h2")]
         for o in items[:25]:
-            block.append(P("• " + esc(o.location) + (f" — {esc(o.detail)}" if o.detail else ""), "small"))
+            block.append(P("• " + esc(o.location) + (f" — {esc(translate(o.detail, lang))}" if o.detail else ""), "small"))
         story.append(KeepTogether(block[:4]))
         story += block[4:]
     for key, items in (("lim_unversioned", d["unversioned"]), ("lim_nocov", d["no_coverage"]),
@@ -602,7 +603,7 @@ def to_docx(d: dict, lang: str, out: Path) -> Path:
     for kind, items in groups.items():
         heading((tr("obs", lang, kind) if kind in T["obs"] else kind) + f" ({len(items)})", 10.5)
         for o in items[:25]:
-            para(f"• {o.location}" + (f" — {o.detail}" if o.detail else ""), 7.5)
+            para(f"• {o.location}" + (f" — {translate(o.detail, lang)}" if o.detail else ""), 7.5)
     for key, items in (("lim_unversioned", d["unversioned"]), ("lim_nocov", d["no_coverage"])):
         if items:
             heading(f"{tr(key, lang)} ({len(items)})", 10.5)

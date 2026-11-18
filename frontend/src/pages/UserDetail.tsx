@@ -113,7 +113,7 @@ export default function UserDetail() {
               {actions.map((a: any) => (
                 <Table.Tr key={a.id}>
                   <Table.Td><Text size="sm">{fmtDate(a.at)}</Text></Table.Td><Table.Td><Code>{a.action}</Code></Table.Td>
-                  <Table.Td><Text size="xs">{a.object}</Text></Table.Td><Table.Td><Text size="xs" lineClamp={2} maw={380}>{a.detail}</Text></Table.Td>
+                  <Table.Td><Text size="xs">{a.object}</Text></Table.Td><Table.Td><Text size="xs" lineClamp={2} maw={380}>{t(a.detail ?? "")}</Text></Table.Td>
                   <Table.Td><Text size="xs" ff="monospace">{a.ip}</Text></Table.Td>
                 </Table.Tr>
               ))}

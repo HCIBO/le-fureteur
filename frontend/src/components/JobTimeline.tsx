@@ -17,8 +17,8 @@ export function reasonText(p: any): string {
     case "http": return t("Karşı sistem HTTP {status} döndürdü", { status: p.status });
     case "auth": return t("Kimlik doğrulama reddedildi");
     case "blocked": return t("İç ağ / ayrılmış adres güvenlik nedeniyle engellendi");
-    case "unsafe": return p.detail ?? t("Güvenlik sınırı aşıldı");
-    default: return p?.detail ?? t("Beklenmeyen hata");
+    case "unsafe": return p.detail ? t(p.detail) : t("Güvenlik sınırı aşıldı");
+    default: return p?.detail ? t(p.detail) : t("Beklenmeyen hata");
   }
 }
 

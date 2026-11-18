@@ -66,7 +66,7 @@ class VulnDB:
                 self.conn.executescript(SCHEMA)
         except sqlite3.OperationalError as ex:
             if "locked" in str(ex):
-                raise RuntimeError("The vulnerability database is being updated (locked); try again when the update has finished") from ex
+                raise RuntimeError("Zafiyet veritabanı şu anda güncelleniyor (kilitli); güncelleme bitince tekrar deneyin") from ex
             raise
 
     def close(self):

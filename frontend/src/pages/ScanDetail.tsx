@@ -46,7 +46,7 @@ export default function ScanDetail() {
               try { await api(`/scans/${s.id}`, { method: "DELETE" }); ok(t("Tarama silindi")); qc.invalidateQueries({ queryKey: ["scans"] }); nav(`/targets/${s.target_id}`); } catch (e) { fail(e); }
             }}>{t("Taramayı sil")}</Button>}</Group>} />
       {["queued", "running"].includes(s.job.status) && <Progress value={s.job.progress} mb="lg" animated />}
-      {s.job.error && <Card withBorder mb="lg" bg="var(--mantine-color-red-light)"><Text c="red" fw={600}>{s.job.error}</Text></Card>}
+      {s.job.error && <Card withBorder mb="lg" bg="var(--mantine-color-red-light)"><Text c="red" fw={600}>{t(s.job.error)}</Text></Card>}
       {sum?.access?.severe && !sum?.waf?.severe && <AccessIssueCard access={sum.access} targetId={s.target_id} projectId={s.project_id} targetOptions={tgt.data?.options} />}
       {sum?.input_notes?.length > 0 && <InputNotesCard notes={sum.input_notes} />}
       {sum?.waf?.severe && <WafCard waf={sum.waf} targetId={s.target_id} projectId={s.project_id} />}

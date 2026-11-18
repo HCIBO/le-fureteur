@@ -150,15 +150,16 @@ def cmd_server(a):
 
         from .server.db import SessionLocal, init_db
         from .server.models import User
-        from .server.security import MIN_PASSWORD, hash_password, password_problem
+        from .messages import translate
+        from .server.security import hash_password, password_problem
         init_db()
         db = SessionLocal()
         if db.query(User).filter_by(email=a.email.lower()).first():
             log(f"{a.email} already exists.")
             return
         pw = a.password or getpass.getpass("Admin password: ")
-        if password_problem(pw):
-            log(f"Error: the password must be at least {MIN_PASSWORD} characters long and mix letters with digits or symbols")
+        if (p := password_problem(pw)):
+            log(f"Error: {translate(p, 'en')}")
             sys.exit(1)
         db.add(User(email=a.email.lower(), name="Administrator", password_hash=hash_password(pw), role="admin"))
         db.commit()
@@ -208,7 +209,8 @@ def cmd_db(a):
     try:
         db = VulnDB(a.db)
     except RuntimeError as ex:
-        sys.exit(str(ex))
+        from .messages import translate
+        sys.exit(translate(str(ex), "en"))
     if a.db_cmd == "update":
         if a.from_dir:
             update_from_dir(db, a.from_dir, log)
@@ -332,6 +334,10 @@ def main(argv=None):
                 f"  scakit init {a.dir} --name \"Engagement name\" --client \"Customer\"")
         else:
             log(f"Error: file / folder not found: {ex.filename or ex}")
+        sys.exit(1)
+    except ValueError as ex:
+        from .messages import translate
+        log(f"Error: {translate(str(ex), 'en')}")
         sys.exit(1)
 
 

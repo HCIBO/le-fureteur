@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from .. import PRODUCT_NAME
 from ..matcher import SEVERITY_RANK
+from ..messages import translate
 from . import settings_store
 from .models import ROLES, Finding, JiraInstance, Project, Target
 
@@ -141,6 +142,10 @@ def test_connection(inst: JiraInstance) -> dict:
     return out
 
 
+def message_lang(db: Session) -> str:
+    return settings_store.get(db, "default_report_lang") or "en"
+
+
 def _w(s) -> str:
     s = str(s if s is not None else "").replace("\r", " ").replace("\n", " ")
     for ch in "\\{}[]|*_+^~-#!":
@@ -151,24 +156,31 @@ def _w(s) -> str:
 def _description(db: Session, f: Finding, target: Target) -> str:
     cves = [a for a in (f.aliases or []) if a.startswith("CVE-")]
     base = settings_store.get(db, "public_url").rstrip("/")
+    lang = message_lang(db)
+
+    def L(s: str) -> str:
+        return translate(s, lang)
+    pct = f"{f.epss * 100:.1f}" if f.epss is not None else ""
+    epss = (f" | EPSS %{pct}" if lang == "tr" else f" | EPSS {pct}%") if pct else ""
     lines = [
-        "h3. Zafiyet",
-        f"*Kimlik:* {f.vuln_id}" + (f" ({', '.join(cves)})" if cves else ""),
-        f"*Şiddet:* {SEV_TR.get(f.severity, f.severity)}" + (f" (CVSS {f.cvss})" if f.cvss is not None else "")
-        + (f" | EPSS %{f.epss * 100:.1f}" if f.epss is not None else "") + (" | *CISA KEV: aktif sömürülüyor*" if f.kev else ""),
-        f"*Bileşen:* {_w(f.component)} {_w(f.version)} ({_w(f.ecosystem)})",
+        f"h3. {L('Zafiyet')}",
+        f"*{L('Kimlik')}:* {f.vuln_id}" + (f" ({', '.join(cves)})" if cves else ""),
+        f"*{L('Şiddet')}:* {L(SEV_TR.get(f.severity, f.severity))}" + (f" (CVSS {f.cvss})" if f.cvss is not None else "")
+        + epss + (f" | *CISA KEV: {L('aktif sömürülüyor')}*" if f.kev else ""),
+        f"*{L('Bileşen')}:* {_w(f.component)} {_w(f.version)} ({_w(f.ecosystem)})",
         f"*PURL:* {f.purl}" if f.purl else "",
-        f"*Hedef:* {_w(target.project.organization.name)} / {_w(target.project.name)} / {_w(target.name)}",
-        f"*Önerilen sürüm:* {f.upgrade_to}" if f.upgrade_to else
-        (f"*Düzeltilmiş sürümler:* {', '.join(f.fixed_versions)}" if f.fixed_versions else "*Düzeltme:* henüz yok"),
-        "", "h3. Açıklama", _w(f.summary or "-"), "", "h3. Konum / kanıt",
+        f"*{L('Hedef')}:* {_w(target.project.organization.name)} / {_w(target.project.name)} / {_w(target.name)}",
+        f"*{L('Önerilen sürüm')}:* {f.upgrade_to}" if f.upgrade_to else
+        (f"*{L('Düzeltilmiş sürümler')}:* {', '.join(f.fixed_versions)}" if f.fixed_versions
+         else f"*{L('Düzeltme')}:* {L('henüz yok')}"),
+        "", f"h3. {L('Açıklama')}", _w(f.summary or "-"), "", f"h3. {L('Konum / kanıt')}",
     ]
     lines += [f"* {_w(e.get('method'))}: {_w(e.get('location', ''))}" for e in (f.evidence or [])[:10]] or ["-"]
-    lines += ["", "h3. Bağlantılar", f"* https://osv.dev/vulnerability/{f.vuln_id}"]
+    lines += ["", f"h3. {L('Bağlantılar')}", f"* https://osv.dev/vulnerability/{f.vuln_id}"]
     lines += [f"* https://nvd.nist.gov/vuln/detail/{c}" for c in cves[:3]]
     if base:
         lines.append(f"* {PRODUCT_NAME}: {base}/findings?target_id={target.id}&q={f.vuln_id}")
-    lines += ["", f"_{PRODUCT_NAME} tarafından oluşturuldu._"]
+    lines += ["", "_" + L(f"{PRODUCT_NAME} tarafından oluşturuldu.") + "_"]
     return "\n".join(ln for ln in lines if ln is not None)
 
 
@@ -231,18 +243,20 @@ def after_scan(db: Session, scan, changes: dict, log=print) -> None:
                 create_issue(db, r, inst)
                 made += 1
             except JiraError as ex:
-                log(f"  ! could not create Jira issue ({r.vuln_id}): {ex}")
+                log(f"  ! could not create Jira issue ({r.vuln_id}): {translate(str(ex), 'en')}")
                 break
         if made:
             log(f"Jira ({inst.name}): {made} issues created" + (f" ({len(want) - AUTO_CAP} findings skipped due to the limit)"
                                                              if len(want) > AUTO_CAP else ""))
-    for kind, text in (("fixed", f"{PRODUCT_NAME}: tarama #{scan.id} ile bileşen artık görülmüyor, bulgu *Düzeltildi* "
-                                 "olarak işaretlendi."),
-                       ("reopened", f"{PRODUCT_NAME}: tarama #{scan.id} ile bulgu yeniden görüldü ve *yeniden açıldı*.")):
+    lang = message_lang(db)
+    for kind, text in (("fixed", translate(f"{PRODUCT_NAME}: tarama #{scan.id} ile bileşen artık görülmüyor, bulgu "
+                                           "*Düzeltildi* olarak işaretlendi.", lang)),
+                       ("reopened", translate(f"{PRODUCT_NAME}: tarama #{scan.id} ile bulgu yeniden görüldü ve "
+                                              "*yeniden açıldı*.", lang))):
         for r in changes.get(kind, []):
             ri = instance_of(db, r) if r.jira_key else None
             if ri and ri.comment_on_fix:
                 try:
                     comment(db, r, text)
                 except JiraError as ex:
-                    log(f"  ! could not add Jira comment ({r.jira_key}): {ex}")
+                    log(f"  ! could not add Jira comment ({r.jira_key}): {translate(str(ex), 'en')}")

@@ -69,7 +69,7 @@ export default function Audit() {
                 <Table.Td>{a.user ? <Text size="xs" c="blue" style={{ cursor: "pointer" }} onClick={() => set("user", a.user)}>{a.user}</Text> : <Text size="xs" c="dimmed">—</Text>}</Table.Td>
                 <Table.Td><Code color={`var(--mantine-color-${color(a.action)}-light)`} style={{ cursor: "pointer" }} onClick={() => set("action", a.action)}>{a.action}</Code></Table.Td>
                 <Table.Td><Text size="xs">{a.object}</Text></Table.Td>
-                <Table.Td><Tooltip label={a.detail} disabled={!a.detail || a.detail.length < 80} multiline w={420}><Text size="xs" lineClamp={2} maw={420}>{a.detail}</Text></Tooltip></Table.Td>
+                <Table.Td><Tooltip label={t(a.detail ?? "")} disabled={!a.detail || a.detail.length < 80} multiline w={420}><Text size="xs" lineClamp={2} maw={420}>{t(a.detail ?? "")}</Text></Tooltip></Table.Td>
                 <Table.Td><Text size="xs" ff="monospace" style={{ cursor: "pointer" }} onClick={() => { setIpText(a.ip); }}>{a.ip}</Text></Table.Td>
               </Table.Tr>
             ))}

@@ -72,7 +72,7 @@ export function AccessIssueCard({ access, targetId, projectId, targetOptions }: 
           <ThemeIcon size={40} radius="md" color="orange" variant="light"><IconFileAlert size={22} /></ThemeIcon>
           <Stack gap={6} style={{ flex: 1 }}>
             <Text fw={800}>{t("Yüklenen dosyalarda bileşen bulunamadı")}</Text>
-            {access.detail && <Text size="xs" c="dimmed">{access.detail}</Text>}
+            {access.detail && <Text size="xs" c="dimmed">{t(access.detail)}</Text>}
             <Text size="sm">{h.text}</Text>
             {h.code?.map((c) => <CodeBlock key={c.label} code={c.code} filename={c.label} lang="bash" />)}
           </Stack>
@@ -143,7 +143,7 @@ export function InputNotesCard({ notes }: { notes: any[] }) {
           <div key={kind}>
             <Group gap="xs"><Badge variant="light" color="orange" tt="none">{info[kind]?.title ?? kind}</Badge><Text size="xs" c="dimmed">{t("{n} yer", { n: items.length })}</Text></Group>
             <Text size="sm" mt={4}>{info[kind]?.text}</Text>
-            <List size="xs" mt={4} spacing={0}>{items.slice(0, 5).map((n, i) => <List.Item key={i}><Text span size="xs" ff="monospace">{n.location}</Text>{n.detail && kind !== "missing-lockfile" ? ` — ${n.detail}` : ""}</List.Item>)}</List>
+            <List size="xs" mt={4} spacing={0}>{items.slice(0, 5).map((n, i) => <List.Item key={i}><Text span size="xs" ff="monospace">{n.location}</Text>{n.detail && kind !== "missing-lockfile" ? ` — ${t(n.detail)}` : ""}</List.Item>)}</List>
             {kind === "missing-lockfile" && [...new Set(items.map((n) => n.detail))].filter((e) => LOCK_CMD[e]).map((e) => (
               <CodeBlock key={e} code={LOCK_CMD[e]} filename={e} lang="bash" />
             ))}

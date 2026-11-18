@@ -120,7 +120,7 @@ export default function TargetDetail({ user }: { user: User }) {
                 <Table.Td>#{s.id}</Table.Td>
                 <Table.Td><Stack gap={4}><JobBadge status={s.job.status} />{s.job.status === "running" && <Progress value={s.job.progress} size="sm" w={120} />}</Stack></Table.Td>
                 <Table.Td>{fmtDate(s.created_at)}</Table.Td>
-                <Table.Td>{s.summary ? <Text size="sm">{s.summary.components} {t("bileşen ·")} {s.summary.findings} {t("bulgu ·")} {s.summary.new} {t("yeni ·")} {s.summary.fixed} {t("kapandı")}</Text> : s.job.error ? <Text size="sm" c="red">{s.job.error}</Text> : "-"}</Table.Td>
+                <Table.Td>{s.summary ? <Text size="sm">{s.summary.components} {t("bileşen ·")} {s.summary.findings} {t("bulgu ·")} {s.summary.new} {t("yeni ·")} {s.summary.fixed} {t("kapandı")}</Text> : s.job.error ? <Text size="sm" c="red">{t(s.job.error)}</Text> : "-"}</Table.Td>
               </Table.Tr>
             ))}
             {scans.data?.length === 0 && <Table.Tr><Table.Td colSpan={4}><Text c="dimmed" ta="center" py="md">{t("Henüz tarama yok")}</Text></Table.Td></Table.Tr>}

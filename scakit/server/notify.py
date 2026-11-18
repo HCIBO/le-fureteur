@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from .. import PRODUCT_NAME
 from ..matcher import SEVERITY_RANK
+from ..messages import translate
 from . import settings_store
 from .models import NotificationChannel
 from .security import decrypt, encrypt
@@ -72,33 +73,41 @@ def _link(db: Session, path: str) -> str:
     return f"{base}{path}" if base else ""
 
 
+def message_lang(db: Session) -> str:
+    return settings_store.get(db, "default_report_lang") or "en"
+
+
 def build_scan_message(db: Session, event: str, scan, new_rows=(), error: str = "") -> dict:
     t = scan.target
-    title = {"scan_done": "Tarama tamamlandı", "scan_failed": "Tarama başarısız",
-             "new_findings": "Yeni bulgular", "kev": "Aktif sömürülen zafiyet (KEV) bulundu"}[event]
+    lang = message_lang(db)
+
+    def L(s: str) -> str:
+        return translate(s, lang)
+    title = L({"scan_done": "Tarama tamamlandı", "scan_failed": "Tarama başarısız",
+               "new_findings": "Yeni bulgular", "kev": "Aktif sömürülen zafiyet (KEV) bulundu"}[event])
     head = f"{title}: {t.project.organization.name} / {t.project.name} / {t.name} (#{scan.id})"
     lines = []
     s = scan.summary or {}
     if event == "scan_failed":
-        lines.append(f"Hata: {error or '-'}")
+        lines.append(f"{L('Hata')}: {L(error) or '-'}")
     else:
         sev = s.get("severity", {})
-        lines.append(f"{s.get('components', 0)} bileşen, {s.get('findings', 0)} açık bulgu "
+        lines.append(L(f"{s.get('components', 0)} bileşen, {s.get('findings', 0)} açık bulgu "
                      f"(Kritik {sev.get('CRITICAL', 0)}, Yüksek {sev.get('HIGH', 0)}, Orta {sev.get('MEDIUM', 0)}, "
-                     f"Düşük {sev.get('LOW', 0)}), KEV {s.get('kev', 0)}")
-        lines.append(f"Değişim: {s.get('new', 0)} yeni, {s.get('fixed', 0)} kapandı, {s.get('reopened', 0)} yeniden açıldı")
+                     f"Düşük {sev.get('LOW', 0)}), KEV {s.get('kev', 0)}"))
+        lines.append(L(f"Değişim: {s.get('new', 0)} yeni, {s.get('fixed', 0)} kapandı, {s.get('reopened', 0)} yeniden açıldı"))
         w = s.get("waf") or {}
         if w.get("severe"):
-            lines.append(f"UYARI: {w.get('vendor')} WAF / bot koruması {w.get('blocked')}/{w.get('requests')} isteği engelledi; "
-                         "sonuç eksik. Çözüm: siteyi tarayıcıda / Burp'te gezip HAR veya Burp kaydını yükleyin.")
+            lines.append(L(f"UYARI: {w.get('vendor')} WAF / bot koruması {w.get('blocked')}/{w.get('requests')} isteği "
+                           "engelledi; sonuç eksik. Çözüm: siteyi tarayıcıda / Burp'te gezip HAR veya Burp kaydını yükleyin."))
     items = []
     for f in list(new_rows)[:10]:
         cve = next((a for a in (f.aliases or []) if a.startswith("CVE-")), f.vuln_id)
-        items.append(f"[{SEV_TR.get(f.severity, f.severity)}{' · KEV' if f.kev else ''}] {cve} — {f.component} "
+        items.append(f"[{L(SEV_TR.get(f.severity, f.severity))}{' · KEV' if f.kev else ''}] {cve} — {f.component} "
                      f"{f.version}" + (f" → {f.upgrade_to}" if f.upgrade_to else ""))
     if len(new_rows) > 10:
-        items.append(f"… ve {len(new_rows) - 10} bulgu daha")
-    return {"event": event, "title": head, "lines": lines, "items": items,
+        items.append(L(f"… ve {len(new_rows) - 10} bulgu daha"))
+    return {"event": event, "title": head, "lines": lines, "items": items, "lang": lang,
             "url": _link(db, f"/scans/{scan.id}"),
             "data": {"scan_id": scan.id, "target": t.name, "project": t.project.name,
                      "organization": t.project.organization.name, "summary": s, "error": error,
@@ -108,8 +117,9 @@ def build_scan_message(db: Session, event: str, scan, new_rows=(), error: str = 
 
 
 def build_simple_message(db: Session, event: str, title: str, lines: list[str], path: str = "") -> dict:
-    return {"event": event, "title": title, "lines": lines, "items": [], "url": _link(db, path) if path else "",
-            "data": {}}
+    lang = message_lang(db)
+    return {"event": event, "title": translate(title, lang), "lines": [translate(x, lang) for x in lines], "items": [],
+            "url": _link(db, path) if path else "", "data": {}, "lang": lang}
 
 
 def _text(msg: dict) -> str:
@@ -125,13 +135,17 @@ def _slack_esc(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def _open_label(msg: dict) -> str:
+    return translate(f"{PRODUCT_NAME}'de aç", msg.get("lang") or "en")
+
+
 def _slack(msg: dict) -> dict:
     body = "\n".join(_slack_esc(x) for x in msg["lines"] + ([""] + [f"• {i}" for i in msg["items"]] if msg["items"] else []))
     blocks = [{"type": "header", "text": {"type": "plain_text", "text": msg["title"][:150]}},
               {"type": "section", "text": {"type": "mrkdwn", "text": body[:2900] or "-"}}]
     if msg["url"]:
         blocks.append({"type": "actions", "elements": [{"type": "button", "text": {"type": "plain_text",
-                                                                                   "text": f"{PRODUCT_NAME}'de aç"},
+                                                                                   "text": _open_label(msg)},
                                                         "url": msg["url"]}]})
     return {"text": msg["title"], "blocks": blocks}
 
@@ -145,7 +159,7 @@ def _teams(msg: dict) -> dict:
     card = {"type": "AdaptiveCard", "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "version": "1.4", "body": body}
     if msg["url"]:
-        card["actions"] = [{"type": "Action.OpenUrl", "title": f"{PRODUCT_NAME}'de aç", "url": msg["url"]}]
+        card["actions"] = [{"type": "Action.OpenUrl", "title": _open_label(msg), "url": msg["url"]}]
     return {"type": "message", "attachments": [{"contentType": "application/vnd.microsoft.card.adaptive",
                                                  "content": card}]}
 

@@ -88,7 +88,7 @@ export default function Scans({ user }: { user: User }) {
                         {sm?.waf && <Tooltip label={sm.waf.severe ? t("WAF içeriği engelledi; sonuç eksik — tarama sayfasındaki çözümlere bakın") : t("WAF / bot koruması tespit edildi")}><Badge size="sm" color={sm.waf.severe ? "red" : "orange"} variant={sm.waf.severe ? "filled" : "light"} leftSection={<IconShieldLock size={10} />}>{sm.waf.severe ? t("WAF engeli") : "WAF"}</Badge></Tooltip>}
                       </Group>
                       {s.job.status === "running" && <Progress value={s.job.progress} size="sm" w={120} animated />}
-                      {s.job.status === "failed" && <Text size="xs" c="red" lineClamp={1} maw={220}>{s.job.error}</Text>}
+                      {s.job.status === "failed" && <Text size="xs" c="red" lineClamp={1} maw={220}>{t(s.job.error)}</Text>}
                     </Stack>
                   </Table.Td>
                   <Table.Td><Text size="sm">{fmtDate(s.created_at)}</Text>{duration(s) && <Text size="xs" c="dimmed">{duration(s)}</Text>}</Table.Td>

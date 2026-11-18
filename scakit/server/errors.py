@@ -54,4 +54,4 @@ def human_text(ex: BaseException) -> str:
     return {"dns": "Sunucu adı çözümlenemedi (DNS)", "timeout": "Sunucu yanıt vermedi (zaman aşımı)",
             "tls": "TLS / sertifika hatası", "auth": "Kimlik doğrulama reddedildi (kullanıcı adı / parola)",
             "http": f"Karşı sistem HTTP {h.get('status')} döndürdü", "blocked": "İç ağ / ayrılmış adres engellendi",
-            }.get(k, "Bağlantı kurulamadı: " + h.get("detail", "")[:160])
+            }.get(k, f"Bağlantı kurulamadı: {h.get('detail', '')[:160]}")

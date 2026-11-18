@@ -374,7 +374,7 @@ export default function Toolset() {
       <PageIntro id="toolset" guide="toolset"
         text={t("HTTP isteği gönderip yanıtı inceleyin, metinleri kodlayıp çözün, bir sunucuya erişimi ölçün ve notlarınızı tutun.")}
         points={[t("Ağ araçları iç ağ adreslerine (127.0.0.1, 10.x, 169.254.169.254 vb.) hiçbir koşulda bağlanmaz; yönlendirmeler de denetlenir."), t("Oturum çereziniz hedefe gönderilmez; yalnızca sizin eklediğiniz başlıklar gider. Her istek denetim kaydına yazılır."), t("Kodlayıcı tamamen tarayıcıda çalışır; not defteri yalnızca size görünür.")]} />
-      {status.data && !status.data.network && <Alert mb="md" color="yellow" icon={<IconBolt size={18} />}>{t("Ağ araçları kullanılamıyor:")} {status.data.reason}</Alert>}
+      {status.data && !status.data.network && <Alert mb="md" color="yellow" icon={<IconBolt size={18} />}>{t("Ağ araçları kullanılamıyor:")} {t(status.data.reason ?? "")}</Alert>}
       {status.data?.allowed_domains && <Alert mb="md" color="blue" icon={<IconWorldWww size={18} />}>{t("Yalnızca organizasyonunuzun izinli alan adlarına istek gönderebilirsiniz:")} {status.data.allowed_domains.join(", ") || "—"}</Alert>}
       <Tabs value={tab} onChange={(v) => { setTab(v); try { localStorage.setItem("lf_tool_tab", v ?? "http"); } catch {  } }} keepMounted>
         <Tabs.List mb="md">

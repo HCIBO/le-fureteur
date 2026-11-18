@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..analysis import Canceled, ingest, match_engagement
 from ..engagement import Engagement
+from ..messages import translate
 from ..vulndb.db import VulnDB
 from . import settings_store
 from .config import get_config
@@ -179,7 +180,7 @@ def after_scan_integrations(db: Session, scan: Scan, changes: dict, log, event=N
             event("jira_created", "success", count=made)
     except Exception as ex:
         event("jira_failed", "warn", **humanize(ex))
-        log(f"  ! Jira step failed: {ex}")
+        log(f"  ! Jira step failed: {translate(str(ex), 'en')}")
     org_id = scan.target.project.organization_id
     new_active = [r for r in changes["new"] + changes["reopened"] if r.status in ACTIVE]
 
@@ -197,7 +198,7 @@ def after_scan_integrations(db: Session, scan: Scan, changes: dict, log, event=N
             notify.dispatch(db, "kev", lambda rows: notify.build_scan_message(db, "kev", scan, rows),
                             org_id, log, new_rows=new_active, on_result=on_result)
     except Exception as ex:
-        log(f"  ! Notification step failed: {ex}")
+        log(f"  ! Notification step failed: {translate(str(ex), 'en')}")
 
 
 def _evidence(comp) -> list[dict]:

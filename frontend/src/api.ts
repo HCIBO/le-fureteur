@@ -7,8 +7,10 @@ export function csrf(): string {
 export class ApiError extends Error {
   status: number;
   detail: any;
+  raw: string;
   constructor(status: number, message: string, detail?: any) {
-    super(message);
+    super(t(message));
+    this.raw = message;
     this.status = status;
     this.detail = detail;
   }

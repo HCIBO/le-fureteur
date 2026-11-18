@@ -9,7 +9,7 @@ SCHEMA = {
     "nvd_api_key": ("", True, "NVD API anahtarı (NVD indirmesini hızlandırır)"),
     "vulndb_path": ("", False, "Zafiyet veritabanı dosyası (boşsa varsayılan konum)"),
     "allow_internal_targets": ("0", False, "İç ağ / özel IP adreslerinin taranmasına izin ver (1/0)"),
-    "default_report_lang": ("tr", False, "Varsayılan rapor dili"),
+    "default_report_lang": ("en", False, "Rapor, bildirim ve Jira dili"),
     "web_default_delay": ("1", False, "Web taraması istekler arası bekleme (sn)"),
     "web_default_max_pages": ("30", False, "Web taraması en fazla sayfa"),
     "timezone": ("Europe/Istanbul", False, "Zamanlamalar için saat dilimi"),

@@ -220,7 +220,7 @@ def update_user(user_id: int, body: UserPatch, request: Request, admin: User = D
     if body.password or body.active is False or body.role:
         end_user_sessions(db, u.id)
     audit(db, admin, "user.update", "user", u.id, json.dumps(changes, ensure_ascii=False) +
-          (" +parola" if body.password else ""), client_ip(request))
+          (" +password" if body.password else ""), client_ip(request))
     return user_out(u)
 
 
@@ -745,7 +745,7 @@ MAX_FILES_PER_TARGET = 20
 
 
 async def _store_upload(t: Target, file: UploadFile) -> dict:
-    name = _SAFE.sub("_", Path(file.filename or "dosya").name)[:150] or "dosya"
+    name = _SAFE.sub("_", Path(file.filename or "upload").name)[:150] or "upload"
     d = get_config().uploads_dir / str(t.id)
     d.mkdir(parents=True, exist_ok=True)
     stored = f"{uuid.uuid4().hex[:12]}_{name}"
@@ -1289,7 +1289,7 @@ def findings_csv(request: Request, flt: _FindingFilters = Depends(), user: User 
                     iso(f.first_seen_at), iso(f.last_seen_at)])
     audit(db, user, "findings.export", "finding", "", f"{len(rows)} satır", client_ip(request))
     return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
-                    headers={"Content-Disposition": 'attachment; filename="bulgular.csv"'})
+                    headers={"Content-Disposition": 'attachment; filename="findings.csv"'})
 
 
 _LEGACY = [
@@ -1437,7 +1437,7 @@ def write_settings(body: dict, request: Request, admin: User = Depends(require("
             errors[k] = "Veritabanı klasörü bulunamadı"
     if errors:
         raise HTTPException(400, detail={"code": "invalid_settings", "fields": errors,
-                                         "message": "Bazı ayarlar geçersiz: " + ", ".join(errors)})
+                                         "message": f"Bazı ayarlar geçersiz: {', '.join(errors)}"})
     for k, v in clean.items():
         if settings_store.SCHEMA[k][1] and v == "" and k not in clear:
             continue
@@ -1451,8 +1451,9 @@ def write_settings(body: dict, request: Request, admin: User = Depends(require("
 def smtp_test(request: Request, admin: User = Depends(require("admin")), db: Session = Depends(get_db)):
     from . import notify
     try:
-        notify._send_email(db, [admin.email], f"{PRODUCT_NAME} — SMTP deneme",
-                           f"Bu bir deneme iletisidir. {PRODUCT_NAME} e-posta ayarları çalışıyor.")
+        lang = notify.message_lang(db)
+        notify._send_email(db, [admin.email], notify.translate(f"{PRODUCT_NAME} — SMTP deneme", lang),
+                           notify.translate(f"Bu bir deneme iletisidir. {PRODUCT_NAME} e-posta ayarları çalışıyor.", lang))
     except Exception as ex:
         import smtplib
         from .errors import human_text

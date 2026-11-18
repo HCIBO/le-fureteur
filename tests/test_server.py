@@ -308,7 +308,7 @@ class Phase2Test(_Base):
             a.post("/api/notifications", json={"name": "Teams-baska", "kind": "teams", "organization_id": other["id"],
                                                "config": {"url": "https://teams.test/x"}})
             self.assertEqual(a.post(f"/api/notifications/{ch['id']}/test").status_code, 200)
-            self.assertEqual(sent[-1][1]["text"], "Le Fureteur test bildirimi")
+            self.assertEqual(sent[-1][1]["text"], "Le Fureteur test notification")
             sent.clear()
             a.put("/api/settings", json={"jira_url": "https://jira.test", "jira_user": "u@x.io", "jira_token": "tok",
                                          "jira_project_key": "SEC", "jira_auto_min_severity": "CRITICAL"})

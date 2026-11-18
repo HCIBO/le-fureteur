@@ -80,7 +80,7 @@ function EvidenceTab({ x }: { x: any }) {
                 <span style={{ color: "#484f58", marginRight: 12 }}>{e.line}</span>{e.snippet}
               </Paper>
             )}
-            {e.detail && e.detail !== e.snippet && <Text size="xs" c="dimmed" mt={6}>{e.detail}</Text>}
+            {e.detail && e.detail !== e.snippet && <Text size="xs" c="dimmed" mt={6}>{t(e.detail)}</Text>}
           </Card>
         );
       })}
@@ -170,7 +170,7 @@ export function FindingDetail({ id }: { id: number }) {
       let r;
       try { r = await api(`/findings/${id}/jira`, { method: "POST" }); }
       catch (e: any) {
-        if (!String(e?.message ?? "").includes("seçin")) throw e;
+        if (!String(e?.raw ?? e?.message ?? "").includes("seçin")) throw e;
         const inst = await jira.choose();
         if (inst === undefined) return;
         r = await api(`/findings/${id}/jira`, { body: { instance_id: inst } });

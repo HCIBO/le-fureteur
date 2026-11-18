@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 
 from .. import PRODUCT_NAME, __version__
+from ..messages import translate
 from ..models import base_ecosystem
 from .i18n import T, tr
 from .sections import license_blocks, method_text, supply_blocks, suppressed_blocks
@@ -81,7 +82,7 @@ def _cves(f):
 
 
 def _evidence_text(c, lang, limit=3):
-    items = [f"{e.method}: {e.location}" + (f" ({e.detail})" if e.detail else "") for e in c.evidence[:limit]]
+    items = [f"{e.method}: {e.location}" + (f" ({translate(e.detail, lang)})" if e.detail else "") for e in c.evidence[:limit]]
     if len(c.evidence) > limit:
         items.append(tr("more", lang).format(n=len(c.evidence) - limit))
     return items
@@ -107,7 +108,7 @@ def _evidence_items(c, lang, limit=4):
             continue
         seen.add(e.location)
         loc = f"{e.location}:{e.line}" if getattr(e, "line", None) else e.location
-        out.append((method_label(e.method, lang), loc, (getattr(e, "snippet", "") or e.detail or "")[:140]))
+        out.append((method_label(e.method, lang), loc, (getattr(e, "snippet", "") or translate(e.detail or "", lang))[:140]))
     return out[:limit] if limit else out
 
 
@@ -259,7 +260,7 @@ def to_html(d: dict, lang: str) -> str:
         label = tr("obs", lang, kind) if kind in T["obs"] else kind
         w(f"<h3>{_e(label)} ({len(items)})</h3><ul>")
         for o in items[:30]:
-            w(f"<li><code>{_e(o.location)}</code>" + (f" — {_e(o.detail)}" if o.detail else "")
+            w(f"<li><code>{_e(o.location)}</code>" + (f" — {_e(translate(o.detail, lang))}" if o.detail else "")
               + (f" <span class='small'>[{_e(o.target)}]</span>" if o.target else "") + "</li>")
         w("</ul>")
     for key, items in (("lim_unversioned", d["unversioned"]), ("lim_nocov", d["no_coverage"]),
@@ -355,7 +356,7 @@ def to_markdown(d: dict, lang: str) -> str:
         a("> " + tr("nvd_note", lang) + "\n")
     for o in d["observations"]:
         label = tr("obs", lang, o.kind) if o.kind in T["obs"] else o.kind
-        a(f"- {label}: `{o.location}`" + (f" — {o.detail}" if o.detail else ""))
+        a(f"- {label}: `{o.location}`" + (f" — {translate(o.detail, lang)}" if o.detail else ""))
     for key, items in (("lim_unversioned", d["unversioned"]), ("lim_nocov", d["no_coverage"])):
         if items:
             a(f"- {tr(key, lang)}: " + ", ".join(f"{c.name}" for c in items[:30]))
