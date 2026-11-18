@@ -43,14 +43,14 @@ def build_zip(root: Path, extra_exclude: list[str]) -> Path:
                     continue
                 zf.write(p, rel)
                 count += 1
-    log(f"{count} dosya paketlendi ({tmp.stat().st_size // 1024} KB)")
+    log(f"{count} files packaged ({tmp.stat().st_size // 1024} KB)")
     return tmp
 
 
 class Client:
     def __init__(self, url: str, token: str, cacert: str | None, insecure: bool):
         if not url.lower().startswith(("http://", "https://")):
-            raise SystemExit("--url http:// veya https:// ile başlamalı")
+            raise SystemExit("--url must start with http:// or https://")
         self.url = url.rstrip("/")
         self.token = token
         self.ctx = ssl.create_default_context(cafile=cacert) if cacert else ssl.create_default_context()
@@ -72,12 +72,12 @@ class Client:
                 pass
             raise SystemExit(self._fail(f"HTTP {ex.code} {path}: {detail}"))
         except error.URLError as ex:
-            raise SystemExit(self._fail(f"Sunucuya bağlanılamadı ({self.url}): {ex.reason}"))
+            raise SystemExit(self._fail(f"Could not connect to the server ({self.url}): {ex.reason}"))
         return data if raw else json.loads(data.decode("utf-8"))
 
     @staticmethod
     def _fail(msg: str) -> int:
-        log("HATA: " + msg)
+        log("ERROR: " + msg)
         return 2
 
     def upload(self, fields: dict, file_path: Path):
@@ -111,28 +111,28 @@ def default_ref() -> str:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="lf_ci", description="Le Fureteur CI taraması")
-    ap.add_argument("--url", default=os.environ.get("LF_URL"), help="sunucu adresi (LF_URL)")
-    ap.add_argument("--token", default=os.environ.get("LF_TOKEN"), help="API token'ı (LF_TOKEN)")
+    ap = argparse.ArgumentParser(prog="lf_ci", description="Le Fureteur CI scan")
+    ap.add_argument("--url", default=os.environ.get("LF_URL"), help="server address (LF_URL)")
+    ap.add_argument("--token", default=os.environ.get("LF_TOKEN"), help="API token (LF_TOKEN)")
     ap.add_argument("--project", type=int, default=int(os.environ["LF_PROJECT"]) if os.environ.get("LF_PROJECT") else None,
-                    help="proje numarası (LF_PROJECT)")
-    ap.add_argument("--target", default=os.environ.get("LF_TARGET") or "", help="hedef adı (varsayılan: klasör adı)")
-    ap.add_argument("--path", default=".", help="taranacak klasör (varsayılan: .)")
-    ap.add_argument("--file", help="klasör yerine tek dosya yükle (SBOM, lock dosyası, JAR, imaj .tar, APK ...)")
-    ap.add_argument("--exclude", action="append", default=[], help="hariç tutulacak klasör / yol öneki")
-    ap.add_argument("--fail-on", choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE"], help="şiddet eşiği")
-    ap.add_argument("--kev", choices=["true", "false"], help="KEV bulgusunda başarısız say")
-    ap.add_argument("--license", choices=["true", "false"], help="yasaklı lisansta başarısız say")
-    ap.add_argument("--new-only", action="store_true", help="yalnızca bu taramada yeni çıkan bulgular")
-    ap.add_argument("--sarif", help="SARIF dosyasını buraya yaz (GitHub / GitLab code scanning)")
-    ap.add_argument("--timeout", type=int, default=1800, help="en fazla bekleme (sn)")
-    ap.add_argument("--no-fail", action="store_true", help="kapıdan kalsa da 0 ile çık (yalnızca rapor)")
-    ap.add_argument("--cacert", help="kurum içi CA sertifikası (PEM)")
-    ap.add_argument("--insecure", action="store_true", help="TLS doğrulamasını kapat (önerilmez)")
-    ap.add_argument("--ref", default=default_ref(), help="dal / commit bilgisi")
+                    help="project number (LF_PROJECT)")
+    ap.add_argument("--target", default=os.environ.get("LF_TARGET") or "", help="target name (default: folder name)")
+    ap.add_argument("--path", default=".", help="folder to scan (default: .)")
+    ap.add_argument("--file", help="upload a single file instead of a folder (SBOM, lock file, JAR, image .tar, APK ...)")
+    ap.add_argument("--exclude", action="append", default=[], help="folder / path prefix to exclude")
+    ap.add_argument("--fail-on", choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE"], help="severity threshold")
+    ap.add_argument("--kev", choices=["true", "false"], help="fail on actively exploited (KEV) findings")
+    ap.add_argument("--license", choices=["true", "false"], help="fail on denied licenses")
+    ap.add_argument("--new-only", action="store_true", help="only findings new in this scan affect the gate")
+    ap.add_argument("--sarif", help="write a SARIF file here (GitHub / GitLab code scanning)")
+    ap.add_argument("--timeout", type=int, default=1800, help="maximum wait (seconds)")
+    ap.add_argument("--no-fail", action="store_true", help="exit 0 even if the gate fails (report only)")
+    ap.add_argument("--cacert", help="internal CA certificate (PEM)")
+    ap.add_argument("--insecure", action="store_true", help="disable TLS verification (not recommended)")
+    ap.add_argument("--ref", default=default_ref(), help="branch / commit reference")
     a = ap.parse_args(argv)
     if not (a.url and a.token and a.project):
-        log("HATA: --url, --token ve --project (veya LF_URL, LF_TOKEN, LF_PROJECT) gerekli")
+        log("ERROR: --url, --token and --project (or LF_URL, LF_TOKEN, LF_PROJECT) are required")
         return 2
 
     c = Client(a.url, a.token, a.cacert, a.insecure)
@@ -152,43 +152,43 @@ def main(argv=None) -> int:
     finally:
         if cleanup:
             upload.unlink(missing_ok=True)
-    log(f"tarama #{res['scan_id']} başladı (hedef: {target}) — {res['ui_url']}")
+    log(f"scan #{res['scan_id']} started (target: {target}) — {res['ui_url']}")
 
     start, last = time.time(), None
     while True:
         st = c.call("GET", res["status_url"])
         if st["status"] != last or st["status"] == "running":
             if st["status"] != last:
-                log(f"durum: {st['status']}")
+                log(f"status: {st['status']}")
             last = st["status"]
         if st["status"] in ("done", "failed", "canceled"):
             break
         if time.time() - start > a.timeout:
-            log("HATA: zaman aşımı")
+            log("ERROR: timed out")
             return 2
         time.sleep(5)
     if st["status"] != "done":
-        log(f"HATA: tarama {st['status']}: {st.get('error') or ''}")
+        log(f"ERROR: scan {st['status']}: {st.get('error') or ''}")
         return 2
 
     s, g = st["summary"] or {}, st["gate"]
     sev = g["counts"]["severity"]
-    log(f"{s.get('components', 0)} bileşen, {g['counts']['findings']} açık bulgu — "
+    log(f"{s.get('components', 0)} components, {g['counts']['findings']} open findings — "
         + ", ".join(f"{k} {sev.get(k, 0)}" for k in ("CRITICAL", "HIGH", "MEDIUM", "LOW"))
-        + f", KEV {g['counts']['kev']} | yeni {s.get('new', 0)}, kapanan {s.get('fixed', 0)}")
+        + f", KEV {g['counts']['kev']} | new {s.get('new', 0)}, fixed {s.get('fixed', 0)}")
     if a.sarif:
         Path(a.sarif).write_bytes(c.call("GET", res["sarif_url"], raw=True))
-        log(f"SARIF yazıldı: {a.sarif}")
+        log(f"SARIF written: {a.sarif}")
     pol = g["policy"]
-    log(f"politika: fail_on={pol['fail_on']} kev={pol['fail_on_kev']} lisans={pol['fail_on_license']} "
-        f"yalnızca-yeni={pol['new_only']}")
+    log(f"policy: fail_on={pol['fail_on']} kev={pol['fail_on_kev']} license={pol['fail_on_license']} "
+        f"new_only={pol['new_only']}")
     if g["passed"]:
-        log("SONUÇ: GEÇTİ")
+        log("RESULT: PASSED")
         return 0
     for r in g["reasons"]:
-        detail = f" (eşik {r['threshold']})" if r.get("threshold") else ""
+        detail = f" (threshold {r['threshold']})" if r.get("threshold") else ""
         log(f"  ✗ {r['rule']}{detail}: {r['count']}")
-    log("SONUÇ: KALDI" + (" (--no-fail: yine de 0 ile çıkılıyor)" if a.no_fail else ""))
+    log("RESULT: FAILED" + (" (--no-fail: exiting with 0 anyway)" if a.no_fail else ""))
     return 0 if a.no_fail else 1
 
 

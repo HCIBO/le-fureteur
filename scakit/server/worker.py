@@ -147,7 +147,7 @@ def _execute(db, job: Job) -> None:
             job.status = "done"
     except Canceled:
         job.status = "canceled"
-        ctx.log("İptal edildi.")
+        ctx.log("Canceled.")
     except Exception as ex:
         db.rollback()
         from .errors import humanize
@@ -239,7 +239,7 @@ def recover_stale() -> None:
 def main(poll: float = 2.0, concurrency: int = 1) -> None:
     init_db()
     recover_stale()
-    print(f"scakit worker çalışıyor ({WORKER_ID}, eşzamanlı iş: {concurrency})", flush=True)
+    print(f"scakit worker running ({WORKER_ID}, concurrent jobs: {concurrency})", flush=True)
     running: dict[int, tuple] = {}
     last_finished = 0.0
     db = SessionLocal()

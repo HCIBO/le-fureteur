@@ -79,13 +79,13 @@ def ingest(eng, inputs, *, kind: str = "auto", target: str | None = None, os_eco
             on_input("done", inp, **res)
     eng.inventory.finalize()
     eng.save()
-    log(f"Envanter: {len(eng.inventory.components)} bileşen")
+    log(f"Inventory: {len(eng.inventory.components)} components")
 
 
 def _ingest_one(eng, inp, forced, queue, target, os_eco, dev, web, log):
     k = forced if forced != "auto" else detect_type(inp)
     tgt = target or (Path(inp).name if not inp.startswith("http") else inp.split("/")[2])
-    log(f"[{k}] {inp} (hedef: {tgt})")
+    log(f"[{k}] {inp} (target: {tgt})")
     notes, comps, nested = [], [], []
     if k == "source":
         from .collectors.whitebox import scan_directory, scan_source_archive
@@ -100,8 +100,8 @@ def _ingest_one(eng, inp, forced, queue, target, os_eco, dev, web, log):
             if imp["files"]:
                 st = annotate(comps, imp)
                 eng.merge_usage(imp["go_calls"], {"target": tgt, "files": imp["files"], **st})
-                log(f"  kullanım analizi: {imp['files']} kaynak dosya, {st['imported']} bileşen import ediliyor, "
-                    f"{st['not-imported']} doğrudan import görülmedi")
+                log(f"  usage analysis: {imp['files']} source files, {st['imported']} components imported, "
+                    f"{st['not-imported']} with no direct import")
         else:
             comps, notes = scan_source_archive(inp, target=tgt, os_eco=os_eco, include_dev=dev)
     elif k == "sbom":
@@ -115,7 +115,7 @@ def _ingest_one(eng, inp, forced, queue, target, os_eco, dev, web, log):
         text = Path(inp).read_text(errors="replace")
         comps, _eco = _sniff_text(text, Path(inp).name.lower(), Path(inp).name, tgt, os_eco)
         if not comps:
-            log("  ! Dosya türü tanınamadı. OS paket listesi ise işletim sistemi (ör. Debian:12) belirtin.")
+            log("  ! File type not recognised. For an OS package list, specify the operating system (e.g. Debian:12).")
     elif k == "image":
         from .collectors.whitebox.container import scan_image
         comps, notes = scan_image(inp, target=tgt, include_dev=dev)
@@ -140,13 +140,13 @@ def _ingest_one(eng, inp, forced, queue, target, os_eco, dev, web, log):
         from .collectors.blackbox.desktop import scan_desktop
         comps, notes = scan_desktop(inp, target=tgt, include_dev=dev, log=log)
     else:
-        log(f"  ! '{k}' türü bu sürümde desteklenmiyor.")
+        log(f"  ! type '{k}' is not supported in this version.")
         return
     added = eng.inventory.add(comps)
     for n in notes:
         eng.inventory.observe(n[0], tgt, n[1], n[2] if len(n) > 2 else "")
     eng.record_run(k, inp, tgt, added, len(comps))
-    log(f"  {len(comps)} tespit, {added} yeni bileşen")
+    log(f"  {len(comps)} detections, {added} new components")
     queue += [(str(sub), "auto") for sub in nested]
     return {"kind": k, "detections": len(comps), "new": added, "nested": len(nested)}
 

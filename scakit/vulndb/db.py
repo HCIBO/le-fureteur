@@ -66,7 +66,7 @@ class VulnDB:
                 self.conn.executescript(SCHEMA)
         except sqlite3.OperationalError as ex:
             if "locked" in str(ex):
-                raise RuntimeError("Zafiyet veritabanı şu anda güncelleniyor (kilitli); güncelleme bitince tekrar deneyin") from ex
+                raise RuntimeError("The vulnerability database is being updated (locked); try again when the update has finished") from ex
             raise
 
     def close(self):
@@ -227,7 +227,7 @@ def _download(url: str, dest: Path, log=print, retries: int = 6) -> Path:
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     if _fresh(dest):
-        log(f"  güncel (atlandı): {dest.name}")
+        log(f"  up to date (skipped): {dest.name}")
         return dest
     tmp = dest.with_suffix(dest.suffix + ".part")
     tag = dest.with_suffix(dest.suffix + ".part-etag")
@@ -258,18 +258,18 @@ def _download(url: str, dest: Path, log=print, retries: int = 6) -> Path:
             got = tmp.stat().st_size / 1048576 if tmp.exists() else 0
             if attempt == retries:
                 raise
-            log(f"  ! {dest.name}: bağlantı koptu ({type(ex).__name__}), {got:.0f} MB inmişti; "
-                f"yeniden deneniyor ({attempt}/{retries - 1})")
+            log(f"  ! {dest.name}: connection dropped ({type(ex).__name__}) after {got:.0f} MB; "
+                f"retrying ({attempt}/{retries - 1})")
             time.sleep(min(5 * attempt, 30))
     tag.unlink(missing_ok=True)
     if dest.suffix == ".zip" and not _zip_ok(tmp):
         tmp.unlink(missing_ok=True)
         if retries > 1:
-            log(f"  ! {dest.name} bozuk indi (CRC); baştan yeniden indiriliyor")
+            log(f"  ! {dest.name} downloaded corrupted (CRC); downloading again from scratch")
             return _download(url, dest, log, retries=1)
         raise OSError(f"{dest.name} bozuk indi")
     tmp.replace(dest)
-    log(f"  indirildi: {dest.name} ({dest.stat().st_size / 1048576:.1f} MB)")
+    log(f"  downloaded: {dest.name} ({dest.stat().st_size / 1048576:.1f} MB)")
     return dest
 
 
@@ -289,7 +289,7 @@ def download_all(directory: str | Path, ecosystems=None, log=print, nvd: bool = 
     d = Path(directory)
     if nvd:
         from . import nvd as nvdmod
-        log("  NVD ürün verisi indiriliyor (API anahtarı yoksa birkaç dakika sürer; NVD_API_KEY ile hızlanır)")
+        log("  Downloading NVD product data (takes a few minutes without an API key; NVD_API_KEY speeds it up)")
         nvdmod.download_all(d, log)
     failed = []
     jobs = [(OSV_URL.format(eco=quote(eco)), osv_filename(eco)) for eco in ecosystems or DEFAULT_ECOSYSTEMS]
@@ -299,11 +299,11 @@ def download_all(directory: str | Path, ecosystems=None, log=print, nvd: bool = 
             _download(url, d / name, log)
         except Exception as ex:
             failed.append(name)
-            log(f"  ! {name} indirilemedi: {type(ex).__name__}")
+            log(f"  ! could not download {name}: {type(ex).__name__}")
     (d / "ecosystems.json").write_text(json.dumps(ecosystems or DEFAULT_ECOSYSTEMS))
     if failed:
-        log(f"  UYARI: {len(failed)} kaynak indirilemedi ({', '.join(failed)}). Eski verisi (varsa) kullanılır; "
-            f"komutu tekrar çalıştırın — inen dosyalar atlanır, yarım kalan kaldığı yerden devam eder.")
+        log(f"  WARNING: {len(failed)} sources could not be downloaded ({', '.join(failed)}). Previous data (if any) is used; "
+            f"run the command again — completed files are skipped and partial downloads resume.")
     return d
 
 
@@ -316,19 +316,19 @@ def update_from_dir(db: VulnDB, directory: str | Path, log=print) -> None:
         label = next((e for e in (ecos or DEFAULT_ECOSYSTEMS) if osv_filename(e) == z.name), z.stem[4:])
         sig = f"{z.stat().st_size}:{int(z.stat().st_mtime)}"
         if (done.get(f"file:{z.name}") or {}).get("sig") == sig:
-            log(f"  OSV {label}: değişmemiş (içe aktarma atlandı)")
+            log(f"  OSV {label}: unchanged (import skipped)")
             continue
         try:
             n = db.import_osv_zip(str(z), label)
         except (zipfile.BadZipFile, EOFError, OSError) as ex:
             db.conn.rollback()
             z.unlink(missing_ok=True)
-            log(f"  ! OSV {label}: arşiv bozuk ({type(ex).__name__}); atlandı, sonraki güncellemede yeniden indirilecek")
+            log(f"  ! OSV {label}: archive corrupted ({type(ex).__name__}); skipped, it will be downloaded again on the next update")
             failed.append(label)
             continue
         db._set_meta(f"file:{z.name}", json.dumps({"sig": sig}))
         db.conn.commit()
-        log(f"  OSV {label}: {n} kayıt")
+        log(f"  OSV {label}: {n} records")
     if (d / "epss_scores-current.csv.gz").exists():
         log(f"  EPSS: {db.import_epss(d / 'epss_scores-current.csv.gz')} CVE")
     if (d / "known_exploited_vulnerabilities.json").exists():
@@ -337,7 +337,7 @@ def update_from_dir(db: VulnDB, directory: str | Path, log=print) -> None:
         from . import nvd as nvdmod
         nvdmod.import_dir(db, d, log)
     if failed:
-        log(f"  UYARI: {len(failed)} OSV kaynağı bozuk olduğu için atlandı ({', '.join(failed)}); diğerleri güncellendi")
+        log(f"  WARNING: {len(failed)} OSV sources were skipped because they are corrupted ({', '.join(failed)}); the others were updated")
 
 
 def update_online(db: VulnDB, ecosystems=None, cache_dir: str | Path | None = None, log=print,

@@ -36,9 +36,11 @@ class CliTest(unittest.TestCase):
             bom = json.loads(next((eng / "reports").glob("*.cdx.json")).read_text())
             self.assertEqual(bom["specVersion"], "1.5")
             self.assertEqual(bom["vulnerabilities"][0]["recommendation"], "Upgrade to 4.17.21")
-            html = next((eng / "reports").glob("*_TR.html")).read_text()
-            self.assertIn("Düzeltme Planı", html)
+            html = next((eng / "reports").glob("*_EN.html")).read_text()
+            self.assertIn("Remediation Plan", html)
             self.assertIn("lodash", html)
+            main(["report", str(eng), "--lang", "tr", "--formats", "html"])
+            self.assertIn("Düzeltme Planı", next((eng / "reports").glob("*_TR.html")).read_text())
 
     def test_suppress_and_spdx(self):
         from scakit.cli import apply_suppressions

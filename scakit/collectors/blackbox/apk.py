@@ -231,5 +231,5 @@ def scan_apk(path: str, target: str = "", log=None):
     with SafeZipFile(path) as zf:
         s.scan_zip(zf, Path(path).name)
     if log:
-        log(f"  {len(s.comps)} tespit ({sum(1 for c in s.comps if c.version)} sürümlü)")
+        log(f"  {len(s.comps)} detections ({sum(1 for c in s.comps if c.version)} with version)")
     return s.comps, s.notes

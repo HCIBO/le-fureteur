@@ -231,10 +231,10 @@ def after_scan(db: Session, scan, changes: dict, log=print) -> None:
                 create_issue(db, r, inst)
                 made += 1
             except JiraError as ex:
-                log(f"  ! Jira kaydı açılamadı ({r.vuln_id}): {ex}")
+                log(f"  ! could not create Jira issue ({r.vuln_id}): {ex}")
                 break
         if made:
-            log(f"Jira ({inst.name}): {made} kayıt açıldı" + (f" ({len(want) - AUTO_CAP} bulgu sınır nedeniyle atlandı)"
+            log(f"Jira ({inst.name}): {made} issues created" + (f" ({len(want) - AUTO_CAP} findings skipped due to the limit)"
                                                              if len(want) > AUTO_CAP else ""))
     for kind, text in (("fixed", f"{PRODUCT_NAME}: tarama #{scan.id} ile bileşen artık görülmüyor, bulgu *Düzeltildi* "
                                  "olarak işaretlendi."),
@@ -245,4 +245,4 @@ def after_scan(db: Session, scan, changes: dict, log=print) -> None:
                 try:
                     comment(db, r, text)
                 except JiraError as ex:
-                    log(f"  ! Jira yorumu yazılamadı ({r.jira_key}): {ex}")
+                    log(f"  ! could not add Jira comment ({r.jira_key}): {ex}")

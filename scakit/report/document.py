@@ -86,7 +86,7 @@ def to_pdf(d: dict, lang: str, out: Path) -> Path:
         pdfmetrics.registerFontFamily("R", normal="R", bold="RB", italic="R", boldItalic="RB")
         F, FB, FM = "R", "RB", "RM"
     else:
-        print("uyarı: Unicode TTF font bulunamadı; Türkçe karakterler bozuk görünebilir", file=sys.stderr)
+        print("warning: no Unicode TTF font found; non-ASCII characters may not render correctly", file=sys.stderr)
         F, FB, FM = "Helvetica", "Helvetica-Bold", "Courier"
 
     c = lambda rgb: colors.Color(*(v / 255 for v in rgb))

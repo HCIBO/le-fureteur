@@ -90,7 +90,7 @@ def run(db: Session, log=print) -> dict:
     row.value = json.dumps({"at": now.isoformat(), **stats})
     db.merge(row)
     db.commit()
-    log(f"Bakım: {stats}")
+    log(f"Maintenance: {stats}")
     return stats
 
 

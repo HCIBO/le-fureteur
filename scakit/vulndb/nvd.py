@@ -96,7 +96,7 @@ def download_all(dest: str | Path, log=print) -> None:
         try:
             download_product(cpe, d, key, log)
         except Exception as ex:
-            log(f"  ! NVD {cpe} indirilemedi ({type(ex).__name__}); eski verisi kullanılır")
+            log(f"  ! could not download NVD {cpe} ({type(ex).__name__}); previous data is used")
 
 
 def import_dir(db, directory: str | Path, log=print) -> int:
@@ -119,7 +119,7 @@ def import_dir(db, directory: str | Path, log=print) -> int:
     from .db import _now
     c.execute("INSERT OR REPLACE INTO meta VALUES (?,?)", ("nvd", json.dumps({"updated": _now(), "count": total})))
     c.commit()
-    log(f"  NVD: {total} CVE kaydı")
+    log(f"  NVD: {total} CVE records")
     return total
 
 

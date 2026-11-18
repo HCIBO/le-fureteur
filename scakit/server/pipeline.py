@@ -66,7 +66,7 @@ def run_scan(db: Session, job: Job, ctx: JobContext) -> None:
     if project.license_policy:
         (eng.path / "license_policy.json").write_text(json.dumps(project.license_policy))
 
-    ctx.log(f"Tarama başladı: {target.name} ({target.kind})")
+    ctx.log(f"Scan started: {target.name} ({target.kind})")
     waf_info: dict = {}
     access_info: dict = {}
     ctx.event("scan_started", target=target.name, kind=target.kind, url=target.url or None,
@@ -108,7 +108,7 @@ def run_scan(db: Session, job: Job, ctx: JobContext) -> None:
         if web["browser_tls"]:
             ctx.event("browser_tls", profile=web["browser_tls"])
         if auth.get("type", "none") != "none":
-            ctx.log(f"Kimlik doğrulama: {auth['type']}")
+            ctx.log(f"Authentication: {auth['type']}")
             ctx.event("auth", type=auth["type"])
         allow_internal = settings_store.get_bool(db, "allow_internal_targets") and role != "customer"
         with outbound_guard(enabled=not allow_internal):
@@ -129,8 +129,8 @@ def run_scan(db: Session, job: Job, ctx: JobContext) -> None:
              for f in db.query(Finding).filter(Finding.target_id == target.id,
                                                Finding.status.in_(SUPPRESSING)).all()]
     findings, notes = match_engagement(eng, vulndb(db), extra_rules=rules)
-    ctx.log(f"Eşleştirme: {len(eng.inventory.components)} bileşen, {len(findings)} bulgu "
-            f"(+{len(notes.get('suppressed', []))} ayrılmış)")
+    ctx.log(f"Matching: {len(eng.inventory.components)} components, {len(findings)} findings "
+            f"(+{len(notes.get('suppressed', []))} set aside)")
     ctx.event("matched", components=len(eng.inventory.components), findings=len(findings),
               suppressed=len(notes.get("suppressed", [])))
     ctx.progress(80)
@@ -157,7 +157,7 @@ def run_scan(db: Session, job: Job, ctx: JobContext) -> None:
     keys = sorted(str(k) for k in eng.inventory.components) + sorted(f"{f.component_key}|{f.vuln_id}" for f in findings)
     scan.summary["result_sha"] = hashlib.sha256("\n".join(keys).encode()).hexdigest()[:16]
     db.commit()
-    ctx.log(f"Bulgular: {stats['new']} yeni, {stats['fixed']} kapandı, {stats['reopened']} yeniden açıldı")
+    ctx.log(f"Findings: {stats['new']} new, {stats['fixed']} fixed, {stats['reopened']} reopened")
     ctx.event("synced", **stats)
     written = build_reports(eng, ctx.log, project.report_langs)
     ctx.event("reports", files=[p.name for p in written])
@@ -179,7 +179,7 @@ def after_scan_integrations(db: Session, scan: Scan, changes: dict, log, event=N
             event("jira_created", "success", count=made)
     except Exception as ex:
         event("jira_failed", "warn", **humanize(ex))
-        log(f"  ! Jira adımı başarısız: {ex}")
+        log(f"  ! Jira step failed: {ex}")
     org_id = scan.target.project.organization_id
     new_active = [r for r in changes["new"] + changes["reopened"] if r.status in ACTIVE]
 
@@ -197,7 +197,7 @@ def after_scan_integrations(db: Session, scan: Scan, changes: dict, log, event=N
             notify.dispatch(db, "kev", lambda rows: notify.build_scan_message(db, "kev", scan, rows),
                             org_id, log, new_rows=new_active, on_result=on_result)
     except Exception as ex:
-        log(f"  ! Bildirim adımı başarısız: {ex}")
+        log(f"  ! Notification step failed: {ex}")
 
 
 def _evidence(comp) -> list[dict]:
@@ -283,8 +283,8 @@ def build_reports(eng: Engagement, log, extra_langs=None, main_lang: str | None 
             document.to_docx(d, lang, out / f"{rep}_{lang}.docx")
             written += [out / f"{rep}_{lang}.pdf", out / f"{rep}_{lang}.docx"]
         except ImportError as ex:
-            log(f"  ! PDF/Word rapor üretilemedi ({ex.name} kurulu değil)")
-    log(f"Raporlar üretildi: {', '.join(p.name for p in written)}")
+            log(f"  ! could not generate PDF / Word report ({ex.name} is not installed)")
+    log(f"Reports generated: {', '.join(p.name for p in written)}")
     return written
 
 
@@ -295,13 +295,13 @@ def run_db_update(db: Session, job: Job, ctx: JobContext) -> None:
         os.environ["NVD_API_KEY"] = key
     vdb = vulndb(db)
     src = (job.params or {}).get("from_dir")
-    ctx.log("Zafiyet veritabanı güncelleniyor" + (f" ({src} klasöründen)" if src else " (internetten)"))
+    ctx.log("Updating the vulnerability database" + (f" (from folder {src})" if src else " (from the internet)"))
     if src:
         update_from_dir(vdb, src, ctx.log)
     else:
         update_online(vdb, log=ctx.log, nvd=not (job.params or {}).get("no_nvd"))
     st = vdb.stats()
-    ctx.log(f"Tamamlandı: OSV {st['vulns']} kayıt, EPSS {st['epss']}, KEV {st['kev']}")
+    ctx.log(f"Done: OSV {st['vulns']} records, EPSS {st['epss']}, KEV {st['kev']}")
 
 
 def run_report(db: Session, job: Job, ctx: JobContext) -> None:
@@ -318,9 +318,9 @@ def run_report(db: Session, job: Job, ctx: JobContext) -> None:
 
 def run_selfscan(db: Session, job: Job, ctx: JobContext) -> None:
     from . import sysinfo
-    ctx.log("scakit bileşenleri kendi zafiyet veritabanıyla taranıyor (Python, arayüz, işletim sistemi)")
+    ctx.log("Scanning scakit's own components against the vulnerability database (Python, web interface, operating system)")
     res = sysinfo.selfscan(db)
-    ctx.log(f"Tamamlandı: {sum(res['components'].values())} bileşen, {res['vulnerable']} bileşende zafiyet")
+    ctx.log(f"Done: {sum(res['components'].values())} components, {res['vulnerable']} with vulnerabilities")
     job.params = {**(job.params or {}), "result": res}
     db.commit()
 

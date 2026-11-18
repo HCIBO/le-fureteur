@@ -228,7 +228,7 @@ def scan_traffic(path: str, target: str = "", evidence_dir=None, log=None):
     if not store:
         return [], ["Trafik kaydında incelenecek yanıt yok"]
     hosts = {urlparse(u).hostname for u in html} or {urlparse(next(iter(store))).hostname}
-    log(f"  trafik kaydı: {len(store)} adres, {len(html)} HTML sayfası, {with_body} yanıt gövdesiyle")
+    log(f"  traffic recording: {len(store)} URLs, {len(html)} HTML pages, {with_body} with a response body")
 
     class _Resp:
         def __init__(self, url, e):

@@ -29,7 +29,7 @@ CHALLENGE = re.compile(r"just a moment|attention required|checking your browser|
 
 def api(server: str, ticket: str, path: str, data: bytes | None = None, ctype: str | None = None) -> dict:
     if not server.lower().startswith(("http://", "https://")):
-        sys.exit("--server http:// veya https:// ile başlamalı")
+        sys.exit("--server must start with http:// or https://")
     req = urllib.request.Request(server.rstrip("/") + "/api" + path, data=data, method="POST" if data else "GET")
     req.add_header("Authorization", f"Bearer {ticket}")
     req.add_header("User-Agent", "lf-capture/1.0")
@@ -43,7 +43,7 @@ def api(server: str, ticket: str, path: str, data: bytes | None = None, ctype: s
             msg = json.loads(e.read()).get("detail")
         except Exception:
             msg = e.reason
-        sys.exit(f"Sunucu hatası ({e.code}): {msg}")
+        sys.exit(f"Server error ({e.code}): {msg}")
 
 
 class Recorder:
@@ -104,37 +104,37 @@ def blocked(page) -> bool:
 def wait_human(page, timeout: int = 600) -> bool:
     if not blocked(page):
         return True
-    print("\n>>> Tarayıcı penceresinde doğrulamayı tamamlayın (en fazla 10 dakika bekleniyor)...", flush=True)
+    print("\n>>> Complete the check in the browser window (waiting up to 10 minutes)...", flush=True)
     end = time.time() + timeout
     while time.time() < end:
         time.sleep(2)
         if not blocked(page):
-            print(">>> Doğrulama geçildi, devam ediliyor.", flush=True)
+            print(">>> Check passed, continuing.", flush=True)
             time.sleep(2)
             return True
     return False
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Le Fureteur tarayıcı yardımcısı")
-    ap.add_argument("--server", required=True, help="Le Fureteur adresi (ör. https://fureteur.firma.local)")
-    ap.add_argument("--ticket", default=os.environ.get("LF_CAPTURE_TICKET"), help="Arayüzden alınan bilet (lfc_...)")
-    ap.add_argument("--max-pages", type=int, help="Gezilecek en fazla sayfa (varsayılan: hedef ayarı)")
+    ap = argparse.ArgumentParser(description="Le Fureteur browser helper")
+    ap.add_argument("--server", required=True, help="Le Fureteur address (e.g. https://fureteur.example.com)")
+    ap.add_argument("--ticket", default=os.environ.get("LF_CAPTURE_TICKET"), help="ticket from the web interface (lfc_...)")
+    ap.add_argument("--max-pages", type=int, help="maximum pages to visit (default: target setting)")
     a = ap.parse_args(argv)
     if not a.ticket:
-        sys.exit("--ticket gerekli (Le Fureteur → tarama sayfası → Tarayıcı yardımcısı)")
+        sys.exit("--ticket is required (Le Fureteur → scan page → Browser helper)")
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        sys.exit("Playwright kurulu değil. Kurulum:\n  python3 -m pip install playwright\n  python3 -m playwright install --with-deps chromium\n"
-                 "(Ubuntu 24.04'te pip 'externally-managed' derse: python3 -m venv ~/.lf && ~/.lf/bin/pip install playwright "
-                 "&& ~/.lf/bin/python -m playwright install --with-deps chromium; ardından ~/.lf/bin/python lf_capture.py ...)")
+        sys.exit("Playwright is not installed. Install it with:\n  python3 -m pip install playwright\n  python3 -m playwright install --with-deps chromium\n"
+                 "(if pip reports 'externally-managed', e.g. on Ubuntu 24.04: python3 -m venv ~/.lf && ~/.lf/bin/pip install playwright "
+                 "&& ~/.lf/bin/python -m playwright install --with-deps chromium; then run ~/.lf/bin/python lf_capture.py ...)")
     info = api(a.server, a.ticket, "/capture/info")
     if info.get("used"):
-        sys.exit("Bu bilet zaten kullanılmış; arayüzden yeni bilet üretin.")
+        sys.exit("This ticket has already been used; create a new one in the web interface.")
     start, host = info["url"], urlparse(info["url"]).hostname
     max_pages, delay = a.max_pages or info["max_pages"], max(1.0, float(info["delay"]))
-    print(f"Hedef: {start}  ·  en fazla {max_pages} sayfa  ·  sayfa arası {delay:.0f} sn")
+    print(f"Target: {start}  ·  up to {max_pages} pages  ·  {delay:.0f} s between pages")
     har = os.path.join(tempfile.mkdtemp(prefix="lf-capture-"), "capture.har")
     rec, n = Recorder(), 0
     with sync_playwright() as p:
@@ -149,7 +149,7 @@ def main(argv=None) -> int:
         try:
             page.goto(start, wait_until="domcontentloaded", timeout=60000)
             if not wait_human(page):
-                print("Doğrulama tamamlanmadı; o ana kadarki kayıt yüklenecek.")
+                print("The check was not completed; what was recorded so far will be uploaded.")
             queue, seen = [page.url], set()
             while queue and n < max_pages and alive():
                 url = urldefrag(queue.pop(0))[0]
@@ -163,7 +163,7 @@ def main(argv=None) -> int:
                     except Exception as ex:
                         if not alive():
                             break
-                        print(f"  ! atlandı: {url} ({type(ex).__name__})")
+                        print(f"  ! skipped: {url} ({type(ex).__name__})")
                         continue
                     if not wait_human(page):
                         break
@@ -186,27 +186,27 @@ def main(argv=None) -> int:
                             and not SKIP.search(u) and not pu.path.lower().endswith(SKIP_EXT):
                         queue.append(u)
         except KeyboardInterrupt:
-            print("\nDurduruldu; o ana kadarki kayıt yüklenecek.")
+            print("\nStopped; what was recorded so far will be uploaded.")
         except Exception as ex:
-            print(f"\nTarayıcı kapandı veya hata oluştu ({type(ex).__name__}); o ana kadarki kayıt yüklenecek.")
+            print(f"\nThe browser was closed or an error occurred ({type(ex).__name__}); what was recorded so far will be uploaded.")
         finally:
             try:
                 browser.close()
             except Exception:
                 pass
     if not rec.entries:
-        sys.exit("Kaydedilecek yanıt toplanamadı; yükleme yapılmadı.")
+        sys.exit("No responses were recorded; nothing was uploaded.")
     rec.write(har)
     sanitize(har)
     size = os.path.getsize(har)
-    print(f"Kayıt: {n} sayfa, {len(rec.entries)} yanıt, {size / 1024 / 1024:.1f} MB — çerez / yetki bilgisi içermez. Yükleniyor...")
+    print(f"Recording: {n} pages, {len(rec.entries)} responses, {size / 1024 / 1024:.1f} MB — no cookies or credentials. Uploading...")
     boundary = uuid.uuid4().hex
     with open(har, "rb") as f:
         body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"capture.har\"\r\n"
                 f"Content-Type: application/json\r\n\r\n").encode() + f.read() + f"\r\n--{boundary}--\r\n".encode()
     res = api(a.server, a.ticket, "/capture/upload", body, f"multipart/form-data; boundary={boundary}")
     os.remove(har)
-    print(f"Tamam. Tarama başladı: {a.server.rstrip('/')}{res['path']}")
+    print(f"Done. Scan started: {a.server.rstrip('/')}{res['path']}")
     return 0
 
 

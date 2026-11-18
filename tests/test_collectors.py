@@ -471,7 +471,7 @@ class VulnDbCorruptZipTest(unittest.TestCase):
             logs = []
             update_from_dir(db, d, logs.append)
             self.assertFalse((d / "osv_PyPI.zip").exists())
-            self.assertTrue(any("bozuk" in m for m in logs), logs)
+            self.assertTrue(any("corrupted" in m for m in logs), logs)
             self.assertEqual(db.conn.execute("SELECT COUNT(*) FROM vulns").fetchone()[0], 1)
             db.close()
 

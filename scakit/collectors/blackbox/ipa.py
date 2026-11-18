@@ -108,5 +108,5 @@ def scan_ipa(path: str, target: str = "", log=None):
         if any(c.ecosystem == "CocoaPods" for c in comps):
             notes.append(("no-osv-coverage", label, "CocoaPods bileşenleri için OSV kaydı yok (envanter / SBOM)"))
     if log:
-        log(f"  {len(comps)} tespit ({sum(1 for c in comps if c.version)} sürümlü)")
+        log(f"  {len(comps)} detections ({sum(1 for c in comps if c.version)} with version)")
     return comps, notes

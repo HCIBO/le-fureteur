@@ -59,7 +59,7 @@ def tick(db: Session, log=print) -> int:
             busy = db.query(Scan).join(Job).filter(Scan.target_id == s.target_id,
                                                    Job.status.in_(("queued", "running"))).first()
             if busy:
-                log(f"zamanlama #{s.id}: hedef meşgul, atlandı")
+                log(f"schedule #{s.id}: target busy, skipped")
                 continue
             from . import queueing
             job = db.get(Job, queueing.new_scan(db, s.target, s.created_by, params={"schedule_id": s.id}).job_id)

@@ -115,7 +115,7 @@ def enrich_online(components: list[Component], internal=None, log=print, delay: 
             notes.append(("deprecated-package", f"{c.name}@{c.version}", str(cur.get("deprecatedReason") or "")[:120]))
         done += 1
         if done % 25 == 0:
-            log(f"  {done} paket zenginleştirildi")
+            log(f"  {done} packages enriched")
     check = {(base_ecosystem(c.ecosystem), c.name) for c in components if c.registry and c.registry not in PUBLIC_REGISTRIES}
     check |= set(internal or [])
     for eco, name in sorted(check):
@@ -127,5 +127,5 @@ def enrich_online(components: list[Component], internal=None, log=print, delay: 
             notes.append(("dependency-confusion", name, f"{eco}: public registry'de aynı adda paket var — "
                                                         "çözümleme sırası / scope yapılandırması doğrulanmalı"))
     s.close()
-    log(f"  {done} paket zenginleştirildi, {len(check)} ad public registry'de kontrol edildi")
+    log(f"  {done} packages enriched, {len(check)} names checked in public registries")
     return notes

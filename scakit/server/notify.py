@@ -241,7 +241,7 @@ def dispatch(db: Session, event: str, msg_factory, organization_id: int | None, 
                 on_result(ch, True)
         except Exception as ex:
             _record(db, ch, safe_error(ex))
-            log(f"  ! bildirim gönderilemedi ({ch.name}): {type(ex).__name__}")
+            log(f"  ! could not send notification ({ch.name}): {type(ex).__name__}")
             if on_result:
                 on_result(ch, False, ex)
     return sent

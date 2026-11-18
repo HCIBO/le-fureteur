@@ -53,13 +53,13 @@ def _decrypt_file(src: Path, dst: Path, passphrase: str) -> None:
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     with open(src, "rb") as fi, open(dst, "wb") as fo:
         if fi.read(len(MAGIC)) != MAGIC:
-            raise BackupError("Şifreli yedek biçimi tanınmadı")
+            raise BackupError("Unrecognised encrypted backup format")
         aes = AESGCM(_key(passphrase, fi.read(16)))
         idx, done = 0, False
         while not done:
             hdr = fi.read(4)
             if len(hdr) < 4:
-                raise BackupError("Yedek dosyası eksik (kesilmiş olabilir)")
+                raise BackupError("Backup file is incomplete (it may have been truncated)")
             n = struct.unpack(">I", hdr)[0]
             nonce, ct = fi.read(12), fi.read(n)
             try:
@@ -69,7 +69,7 @@ def _decrypt_file(src: Path, dst: Path, passphrase: str) -> None:
                     pt = aes.decrypt(nonce, ct, struct.pack(">Q?", idx, True))
                     done = True
             except InvalidTag as ex:
-                raise BackupError("Parola yanlış veya yedek dosyası bozulmuş") from ex
+                raise BackupError("Wrong passphrase or corrupted backup file") from ex
             fo.write(pt)
             idx += 1
 
@@ -132,7 +132,7 @@ def backup(out: Path, passphrase: str | None = None, include_files: bool = True,
         else:
             os.replace(tmp, out)
         out.chmod(0o600)
-        log(f"Yedek yazıldı: {out} ({out.stat().st_size // 1024} KB){' — şifreli' if passphrase else ''}")
+        log(f"Backup written: {out} ({out.stat().st_size // 1024} KB){' — encrypted' if passphrase else ''}")
         return manifest
     finally:
         tmp.unlink(missing_ok=True)
@@ -147,17 +147,17 @@ def restore(src: Path, passphrase: str | None = None, force: bool = False, log=p
         plain = src
         if is_encrypted(src):
             if not passphrase:
-                raise BackupError("Yedek şifreli; parola gerekli")
+                raise BackupError("The backup is encrypted; a passphrase is required")
             plain = work / "backup.tar.gz"
             _decrypt_file(src, plain, passphrase)
         with eng.connect() as conn:
             from .models import User
             if conn.execute(select(User.__table__)).first() is not None and not force:
-                raise BackupError("Hedef kurulum boş değil (kullanıcı var). Üzerine yazmak için --force kullanın.")
+                raise BackupError("The target installation is not empty (it has users). Use --force to overwrite it.")
         with tarfile.open(plain, "r:gz") as tf:
             names = {m.name: m for m in tf.getmembers()}
             if "manifest.json" not in names:
-                raise BackupError("Geçerli bir yedek değil (manifest yok)")
+                raise BackupError("Not a valid backup (no manifest)")
             manifest = json.loads(tf.extractfile(names["manifest.json"]).read())
             tables = {t.name: t for t in Base.metadata.sorted_tables}
             with eng.begin() as conn:
@@ -195,11 +195,11 @@ def restore(src: Path, passphrase: str | None = None, force: bool = False, log=p
                         fdst.write(chunk)
                 os.chmod(dest, 0o600)
                 restored_files += 1
-        log(f"Geri yüklendi: {sum(manifest['tables'].values())} kayıt, {restored_files} dosya "
-            f"(yedek tarihi {manifest['created_at']}, sürüm {manifest['version']})")
+        log(f"Restored: {sum(manifest['tables'].values())} records, {restored_files} files "
+            f"(backup date {manifest['created_at']}, version {manifest['version']})")
         if manifest.get("secret_from_env"):
-            log("! Yedek alınırken gizli anahtar ortam değişkenindeydi: aynı SCAKIT_SECRET_KEY değerini kullanın, "
-                "aksi halde şifreli ayarlar (NVD anahtarı, Jira token'ı, webhook adresleri) çözülemez.")
+            log("! The secret key came from an environment variable when the backup was made: use the same SCAKIT_SECRET_KEY, "
+                "otherwise encrypted settings (NVD key, Jira tokens, webhook addresses) cannot be decrypted.")
         return manifest
     finally:
         import shutil

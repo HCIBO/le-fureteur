@@ -188,5 +188,5 @@ def scan_desktop(path: str, target: str = "", include_dev: bool = False, log=Non
     comps += bcomps
     notes += [(k, f"{label}!/{loc}" if not p.is_dir() else loc, d) for k, loc, d in wb_notes] + bnotes
     if log:
-        log(f"  {len(comps)} tespit ({sum(1 for c in comps if c.version)} sürümlü)")
+        log(f"  {len(comps)} detections ({sum(1 for c in comps if c.version)} with version)")
     return comps, notes

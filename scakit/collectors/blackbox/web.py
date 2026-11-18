@@ -195,7 +195,7 @@ class WebScanner:
         for k, v in self.extra_headers:
             self.s.headers[k] = v
         self.tls_profile = profile
-        self.log(f"  HTTP istemcisi: tarayıcı uyumlu TLS ({profile})")
+        self.log(f"  HTTP client: browser-compatible TLS ({profile})")
 
     def _rebuild_session(self):
         try:
@@ -217,7 +217,7 @@ class WebScanner:
             return False
         self.proxy = left[0]
         self.egress_tried.append(left[0][0])
-        self.log(f"  erişim engeli ({reason}); '{left[0][0]}' çıkış noktası üzerinden yeniden deneniyor")
+        self.log(f"  access blocked ({reason}); retrying through egress point '{left[0][0]}'")
         self._rebuild_session()
         return True
 
@@ -243,7 +243,7 @@ class WebScanner:
                 "egress_tried": self.egress_tried, "detail": next((s["detail"] for s in self.access_samples
                                                                    if s["kind"] == kind), "")}
         if severe:
-            self.log(f"  ! erişim engeli: {kind} ({info['detail']})")
+            self.log(f"  ! access blocked: {kind} ({info['detail']})")
         if self.on_access:
             self.on_access(info)
 
@@ -291,7 +291,7 @@ class WebScanner:
             final_host = urlparse(str(r.url)).hostname
             if (not self.site_adopted and self.requests <= 2 and final_host != self.host
                     and same_site(self.host, final_host) and 200 <= r.status_code < 400):
-                self.log(f"  {self.host} → {final_host} yönlendirmesi: tarama {final_host} üzerinden sürüyor")
+                self.log(f"  {self.host} → {final_host} redirect: continuing the scan on {final_host}")
                 self.host, self.site_adopted = final_host, True
             acc = classify_response(r.status_code, r.headers, body, str(r.url), self.host)
             if acc:
@@ -307,12 +307,12 @@ class WebScanner:
             wait = min(int(ra), 30) if ra.isdigit() else max(5.0, self.delay * 4)
             self.delay = min(max(self.delay * 2, 1.0), 10.0)
             self.req_log.append({"url": url, "status": r.status_code, "retry_after": wait})
-            self.log(f"  {'hız sınırı' if r.status_code == 429 else 'geçici kapalı'} ({r.status_code}): {wait:.0f} sn beklenip yeniden deneniyor; bekleme {self.delay:.1f} sn'ye çıkarıldı")
+            self.log(f"  {'rate limited' if r.status_code == 429 else 'temporarily unavailable'} ({r.status_code}): waiting {wait:.0f} s and retrying; delay raised to {self.delay:.1f} s")
             time.sleep(wait)
             return self.get(url, max_bytes, external, _retry=False)
         if vendor and vendor != "rate-limit" and self.auto_tls and not self.tls_profile:
             self.req_log.append({"url": url, "status": r.status_code, "waf": vendor, "retry": "browser-tls"})
-            self.log(f"  {vendor} engeli görüldü; tarayıcı uyumlu TLS'e otomatik geçiliyor")
+            self.log(f"  blocked by {vendor}; switching to browser-compatible TLS automatically")
             self.s.close()
             self._use_browser_tls("chrome")
             if self.login:
@@ -588,7 +588,7 @@ class WebScanner:
         if not ok:
             raise RuntimeError(f"Form ile giriş başarısız (HTTP {r.status_code}); kullanıcı bilgilerini ve "
                                "başarı / hata metnini kontrol edin")
-        self.log(f"  giriş başarılı ({len(self.s.cookies)} çerez)")
+        self.log(f"  login successful ({len(self.s.cookies)} cookies)")
 
     def run(self):
         if self.login:
@@ -661,7 +661,7 @@ class WebScanner:
             self.ev_dir.mkdir(parents=True, exist_ok=True)
             (self.ev_dir / "requests.json").write_text(json.dumps(self.req_log, indent=1))
         self.s.close()
-        self.log(f"  {n_pages} sayfa, {self.requests} istek, {len(self.comps)} tespit")
+        self.log(f"  {n_pages} pages, {self.requests} requests, {len(self.comps)} detections")
         self._report_access(n_pages)
         if self.waf_hits:
             vendor = max(self.waf_hits, key=self.waf_hits.get)
@@ -669,7 +669,7 @@ class WebScanner:
             info = {"vendor": vendor, "blocked": blocked, "requests": self.requests, "pages": n_pages,
                     "components": len(self.comps), "samples": self.waf_samples, "browser_tls": self.tls_profile,
                     "severe": n_pages == 0 or blocked >= max(1, self.requests // 2)}
-            self.log(f"  ! WAF / bot koruması: {vendor} — {blocked}/{self.requests} istek engellendi veya sorguya çekildi")
+            self.log(f"  ! WAF / bot protection: {vendor} — {blocked}/{self.requests} requests blocked or challenged")
             self.notes.append(f"WAF / bot koruması tespit edildi ({vendor}): {blocked}/{self.requests} istek engellendi; "
                               "sonuçlar eksik olabilir. Tarayıcı IP'sini veya bir tarama başlığını WAF'ta izin listesine "
                               "ekleyin ya da kaynak kod / SBOM yükleyin.")

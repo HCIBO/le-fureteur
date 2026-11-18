@@ -16,7 +16,7 @@ class Engagement:
     def __init__(self, path: str | Path):
         self.path = Path(path)
         if not (self.path / "engagement.json").exists():
-            raise FileNotFoundError(f"Engagement bulunamadı: {self.path} (önce `scakit init` çalıştırın)")
+            raise FileNotFoundError(f"Engagement not found: {self.path} (run `scakit init` first)")
         self.meta = json.loads((self.path / "engagement.json").read_text())
         self.inventory = Inventory.load(self.path / "inventory.json")
 
