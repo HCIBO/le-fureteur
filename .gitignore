@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+docs/onboarding/__pycache__/
+frontend/node_modules/
+frontend/dist/
+deploy/.env

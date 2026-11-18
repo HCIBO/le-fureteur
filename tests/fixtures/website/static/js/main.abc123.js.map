@@ -1,0 +1,2 @@
+{"version":3,"sources":["webpack:///./src/index.js","webpack:///./node_modules/.pnpm/axios@0.21.1/node_modules/axios/lib/axios.js","webpack:///./node_modules/.pnpm/@babel+runtime@7.10.0/node_modules/@babel/runtime/helpers/x.js","webpack:///./node_modules/react-dom/cjs/react-dom.production.min.js","webpack:///./node_modules/marked/lib/marked.js"],
+ "sourcesContent":["console.log(1)","// axios","//","/** @license React v16.13.1\n * react-dom.production.min.js */","/**\n * marked v0.3.6 - a markdown parser\n */"],"mappings":""}

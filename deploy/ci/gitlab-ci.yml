@@ -1,0 +1,13 @@
+le-fureteur:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - python3 -c "import urllib.request,os;r=urllib.request.Request(os.environ['LF_URL']+'/api/ci/client.py',headers={'Authorization':'Bearer '+os.environ['LF_TOKEN']});open('lf_ci.py','wb').write(urllib.request.urlopen(r).read())"
+    - python3 lf_ci.py --target "$CI_PROJECT_NAME" --sarif gl-le-fureteur.sarif
+  artifacts:
+    when: always
+    paths: [gl-le-fureteur.sarif]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"

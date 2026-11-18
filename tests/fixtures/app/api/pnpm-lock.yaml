@@ -1,0 +1,13 @@
+lockfileVersion: '6.0'
+dependencies:
+  jsonwebtoken:
+    specifier: 8.5.1
+    version: 8.5.1
+packages:
+  /jsonwebtoken@8.5.1:
+    resolution: {integrity: sha512-x}
+    dev: false
+  /@types/node@18.0.0:
+    dev: true
+  /react-dom@18.2.0(react@18.2.0):
+    dev: false

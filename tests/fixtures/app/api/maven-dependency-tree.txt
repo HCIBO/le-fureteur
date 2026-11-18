@@ -1,0 +1,8 @@
+com.example:api:jar:1.0.0
++- org.apache.logging.log4j:log4j-core:jar:2.14.1:compile
+|  \- org.apache.logging.log4j:log4j-api:jar:2.14.1:compile
++- com.fasterxml.jackson.core:jackson-databind:jar:2.9.10.1:compile
+|  +- com.fasterxml.jackson.core:jackson-annotations:jar:2.9.10:compile
+|  \- com.fasterxml.jackson.core:jackson-core:jar:2.9.10:compile
+\- junit:junit:jar:4.12:test
+   \- org.hamcrest:hamcrest-core:jar:1.3:test

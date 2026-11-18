@@ -1,0 +1,9 @@
+[[package]]
+name = "urllib3"
+version = "1.26.4"
+category = "main"
+
+[[package]]
+name = "pytest"
+version = "6.0.0"
+category = "dev"

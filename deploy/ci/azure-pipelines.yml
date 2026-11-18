@@ -1,0 +1,14 @@
+trigger: [main]
+pool:
+  vmImage: ubuntu-latest
+steps:
+  - script: |
+      curl -fsS -H "Authorization: Bearer $(LF_TOKEN)" "$(LF_URL)/api/ci/client.py" -o lf_ci.py
+      python3 lf_ci.py --url "$(LF_URL)" --token "$(LF_TOKEN)" --project "$(LF_PROJECT)" \
+        --target "$(Build.Repository.Name)" --sarif $(Build.ArtifactStagingDirectory)/le-fureteur.sarif
+    displayName: Le Fureteur SCA
+  - task: PublishBuildArtifacts@1
+    condition: always()
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)
+      ArtifactName: CodeAnalysisLogs

@@ -1,0 +1,5 @@
+# prod
+Django==3.2.0
+requests>=2.20
+PyYAML[libyaml]==5.3 ; python_version >= "3.6"
+-r requirements-extra.txt

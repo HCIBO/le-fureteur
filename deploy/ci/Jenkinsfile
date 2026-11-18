@@ -1,0 +1,20 @@
+pipeline {
+  agent any
+  environment {
+    LF_URL = 'https://fureteur.firma.local'
+    LF_PROJECT = '3'
+  }
+  stages {
+    stage('Le Fureteur SCA') {
+      steps {
+        withCredentials([string(credentialsId: 'lf-token', variable: 'LF_TOKEN')]) {
+          sh '''
+            curl -fsS -H "Authorization: Bearer $LF_TOKEN" "$LF_URL/api/ci/client.py" -o lf_ci.py
+            python3 lf_ci.py --target "$JOB_NAME" --sarif le-fureteur.sarif
+          '''
+        }
+      }
+      post { always { archiveArtifacts artifacts: 'le-fureteur.sarif', allowEmptyArchive: true } }
+    }
+  }
+}

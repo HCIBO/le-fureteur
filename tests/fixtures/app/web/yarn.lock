@@ -1,0 +1,9 @@
+# yarn lockfile v1
+
+
+axios@^0.21.0:
+  version "0.21.0"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.0.tgz"
+
+"@babel/core@^7.0.0", "@babel/core@^7.1.0":
+  version "7.12.3"

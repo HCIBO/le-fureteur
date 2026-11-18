@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: scakit
+      POSTGRES_USER: scakit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scakit"]
+      interval: 5s
+      retries: 20
+
+  web:
+    build: ..
+    image: scakit:latest
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    environment: &env
+      SCAKIT_DATABASE_URL: postgresql+psycopg://scakit:${POSTGRES_PASSWORD}@db/scakit
+      SCAKIT_SECRET_KEY: ${SCAKIT_SECRET_KEY:?set SCAKIT_SECRET_KEY in .env}
+      SCAKIT_COOKIE_SECURE: ${SCAKIT_COOKIE_SECURE:-0}
+      SCAKIT_MAX_UPLOAD_MB: ${SCAKIT_MAX_UPLOAD_MB:-2048}
+    volumes: [data:/data]
+    ports: ["${SCAKIT_BIND:-127.0.0.1}:8800:8800"]
+    command: ["scakit", "server", "run", "--host", "0.0.0.0", "--port", "8800", "--forwarded-allow-ips", "*"]
+
+  worker:
+    image: scakit:latest
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy }, web: { condition: service_started } }
+    environment: *env
+    volumes: [data:/data]
+    command: ["scakit", "server", "worker"]
+
+volumes:
+  pgdata:
+  data:

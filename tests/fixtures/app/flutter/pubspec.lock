@@ -1,0 +1,10 @@
+packages:
+  http:
+    dependency: "direct main"
+    description: {name: http, url: "https://pub.dartlang.org"}
+    source: hosted
+    version: "0.13.3"
+  flutter:
+    dependency: "direct main"
+    source: sdk
+    version: "0.0.0"

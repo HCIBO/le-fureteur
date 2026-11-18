@@ -1,0 +1,29 @@
+name: Le Fureteur SCA
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 1"
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Le Fureteur scan
+        env:
+          LF_URL: ${{ vars.LF_URL }}
+          LF_PROJECT: ${{ vars.LF_PROJECT }}
+          LF_TOKEN: ${{ secrets.LF_TOKEN }}
+        run: |
+          curl -fsS -H "Authorization: Bearer $LF_TOKEN" "$LF_URL/api/ci/client.py" -o lf_ci.py
+          python3 lf_ci.py --target "${{ github.event.repository.name }}" --sarif le-fureteur.sarif
+      - name: Upload SARIF to GitHub code scanning
+        if: always() && hashFiles('le-fureteur.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: le-fureteur.sarif
+          category: le-fureteur

@@ -1,0 +1,13 @@
+@fullcalendar/core
+MIT
+The MIT License
+
+Copyright (c) 2019
+
+zone.js
+MIT
+The MIT License
+
+pdfmake
+MIT
+Permission is hereby granted

@@ -1,0 +1,17 @@
+Package: libssl1.1
+Status: install ok installed
+Source: openssl
+Version: 1.1.1n-0+deb11u3
+
+Package: openssl
+Status: install ok installed
+Version: 1.1.1n-0+deb11u3
+
+Package: zlib1g
+Status: install ok installed
+Source: zlib (1:1.2.11.dfsg-2+deb11u1)
+Version: 1:1.2.11.dfsg-2+deb11u1
+
+Package: removed-pkg
+Status: deinstall ok config-files
+Version: 1.0

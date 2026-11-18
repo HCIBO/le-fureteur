@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scakit"
+version = "0.1.0"
+description = "Le Fureteur - self-hosted software composition analysis (web interface and scakit engine)"
+readme = "README.md"
+license = {text = "AGPL-3.0-or-later"}
+requires-python = ">=3.10"
+dependencies = [
+    "packaging>=21",
+    "PyYAML>=5.4",
+    "requests>=2.25",
+    "urllib3>=2.8.0",
+    "tomli>=1.1; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+report = ["reportlab>=3.6", "python-docx>=0.8",
+          "pillow>=12.3.0"]
+server = ["fastapi>=0.110", "uvicorn>=0.27", "SQLAlchemy>=2.0", "argon2-cffi>=23.1", "cryptography>=50.0.0",
+          "python-multipart>=0.0.9", "croniter>=2.0", "psycopg[binary]>=3.1", "curl_cffi>=0.7"]
+browser-tls = ["curl_cffi>=0.7"]
+
+[project.scripts]
+scakit = "scakit.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["scakit*"]

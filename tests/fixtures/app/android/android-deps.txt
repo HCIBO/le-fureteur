@@ -1,0 +1,16 @@
+
+> Task :app:dependencies
+
+------------------------------------------------------------
+Project ':app'
+------------------------------------------------------------
+
+releaseRuntimeClasspath - Resolved configuration for runtime classpath for variant: release
++--- com.squareup.okhttp3:okhttp:3.12.0 -> 4.9.0
+|    +--- com.squareup.okio:okio:2.8.0
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib:1.4.10 -> 1.6.21 (*)
+|    \--- org.jetbrains.kotlin:kotlin-stdlib:1.4.10 -> 1.6.21 (*)
++--- androidx.appcompat:appcompat:{strictly 1.4.1} -> 1.4.1 (c)
++--- com.google.code.gson:gson:2.8.6
++--- project :core
+\--- org.bouncycastle:bcprov-jdk15on -> 1.68

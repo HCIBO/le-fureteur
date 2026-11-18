@@ -1,0 +1,8 @@
+PODS:
+  - Alamofire (5.4.0)
+  - Firebase/Analytics (8.0.0):
+    - FirebaseAnalytics (= 8.0.0)
+  - Firebase/Core (8.0.0)
+
+DEPENDENCIES:
+  - Alamofire
