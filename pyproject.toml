@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scakit"
-version = "0.1.0"
+version = "0.1.1"
 description = "Le Fureteur - self-hosted software composition analysis (web interface and scakit engine)"
 readme = "README.md"
 license = {text = "AGPL-3.0-or-later"}

@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-4C6EF5" alt="License: AGPL-3.0"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-4C6EF5" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/deploy-Docker%20Compose-4C6EF5" alt="Docker Compose">
+  <a href="https://github.com/HCIBO/le-fureteur/pkgs/container/le-fureteur"><img src="https://img.shields.io/badge/image-ghcr.io-4C6EF5" alt="Container image on ghcr.io"></a>
   <img src="https://img.shields.io/badge/self--hosted-offline%20analysis-7048E8" alt="Self-hosted">
 </p>
 
@@ -104,7 +104,7 @@ Schedule every target in a project at once — for example every three hours dur
 
 ## Quick start
 
-Le Fureteur ships with a Docker Compose setup (web interface, background worker and PostgreSQL).
+Le Fureteur ships with a Docker Compose setup (web interface, background worker and PostgreSQL). Multi-architecture images (amd64 and arm64) are published to `ghcr.io/hcibo/le-fureteur` for every release.
 
 **Requirements:** Docker with Compose. Plan for about 5 GB of disk space for the vulnerability database; 2 CPU cores and 4 GB RAM are a comfortable starting point.
 
@@ -119,6 +119,15 @@ cp .env.example .env
 Edit `.env` and replace both placeholder values with long random strings, for example with `openssl rand -base64 32`.
 
 **2. Start the stack**
+
+Use the prebuilt image from GitHub Container Registry (recommended):
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Or build the image from source:
 
 ```bash
 docker compose up -d --build

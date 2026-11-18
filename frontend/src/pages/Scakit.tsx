@@ -11,7 +11,7 @@ export default function Scakit({ user }: { user: User }) {
   const meta = useQuery<any>({ queryKey: ["meta"], queryFn: () => api("/meta") });
   const staff = user.role === "admin" || user.role === "analyst";
   const origin = (meta.data?.public_url || window.location.origin).replace(/\/$/, "");
-  const ver = meta.data?.version ?? "0.1.0";
+  const ver = meta.data?.version ?? "";
   const uses = [
     { icon: IconCloudOff, color: "grape", title: t("Kapalı ağ (internetsiz) kurulum"), text: t("Sunucu internete çıkamıyorsa zafiyet veritabanı internetli başka bir makinede scakit ile indirilir, USB / dosya paylaşımıyla sunucuya taşınır.") },
     { icon: IconGitBranch, color: "blue", title: t("CI/CD hattında tarama"), text: t("Derleme sırasında kaynak kodu Le Fureteur'e yükler, sonucu bekler ve politika kapısına göre derlemeyi durdurur (scakit ci).") },
